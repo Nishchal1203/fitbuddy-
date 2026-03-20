@@ -1,12 +1,23 @@
+# Environment Variables
 .env
+.env.local
+.env.*.local
+docker.env
+
+# Python Virtual Environments
+env/
+venv/
+myenv/
+ENV/
+.venv/
+.Python
+
+# Python Cache & Build
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
-venv/
-ENV/
+*.so
 build/
 develop-eggs/
 dist/
@@ -25,12 +36,100 @@ share/python-wheels/
 *.egg
 pip-log.txt
 pip-delete-this-directory.txt
+
+# Python Testing & Coverage
 .mypy_cache/
 .pytest_cache/
-.cache/
-coverage.xml
 .coverage
+coverage.xml
 htmlcov/
+.cache/
+*.cover
+.hypothesis/
+
+# Node.js & npm
+node_modules/
+frontend/node_modules/
+.npm/
+.pnpm-store/
+npm-debug.log*
+npm-error.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# Next.js Build & Cache
+.next/
+frontend/.next/
+out/
+.turbo/
+.eslintcache
+*.tsbuildinfo
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# OS Files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+Desktop.ini
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Temporary & Local Files
+.tmp/
+tmp/
+temp/
+*.bak
+*.swp
+*~
+
+# Build Artifacts
+dist/
+build/
+*.o
+*.a
+*.exe
+
+# Celery Specific
+celerybeat-schedule
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+local_db.sqlite3
+
+# IDE Specific
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Misc
+.cache/
+.hypothesis/
+.pytest_cache/
+*.cer
+*.key
 
