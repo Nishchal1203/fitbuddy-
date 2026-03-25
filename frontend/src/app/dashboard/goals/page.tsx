@@ -1,12 +1,12 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react'
-import GoalsDashboard from '@/components/goals/GoalsDashboard'
-import FloatingAiButton from '@/components/goals/FloatingAiButton'
-import AIGoalAssistant from '@/components/diet-plan/AI_chat'
+import React, { useState } from "react";
+import GoalsDashboard from "@/components/goals/GoalsDashboard";
+import FloatingAiButton from "@/components/goals/FloatingAiButton";
+import AIGoalAssistant from "@/components/diet-plan/AI_chat";
 
 export default function GoalsPage() {
-  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false)
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
 
   return (
     <div className="relative space-y-6 pb-24">
@@ -20,7 +20,5 @@ export default function GoalsPage() {
         onApply={() => setIsAIAssistantOpen(false)}
       />
     </div>
-  )
+  );
 }
-
-

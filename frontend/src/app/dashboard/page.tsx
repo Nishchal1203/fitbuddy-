@@ -1,19 +1,19 @@
-'use client'
+"use client";
 
-import React, { useEffect, useState } from 'react'
-import { RefreshCw } from 'lucide-react'
-import ProgressChart from '@/components/ProgressChart'
-const API_BASE_URL = 'http://localhost:8000'
-const ANALYTICS_API_URL = 'http://localhost:8081'
+import React, { useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
+import ProgressChart from "@/components/ProgressChart";
+const API_BASE_URL = "http://localhost:8000";
+const ANALYTICS_API_URL = "http://localhost:8081";
 
 export default function DashboardHome() {
-  const [goals, setGoals] = useState([])
-  const [workouts, setWorkouts] = useState([])
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [currentQuote, setCurrentQuote] = useState('')
-  const [dailyCalories, setDailyCalories] = useState(0)
+  const [goals, setGoals] = useState([]);
+  const [workouts, setWorkouts] = useState([]);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [currentQuote, setCurrentQuote] = useState("");
+  const [dailyCalories, setDailyCalories] = useState(0);
 
   // Motivational quotes array
   const motivationalQuotes = [
@@ -31,109 +31,114 @@ export default function DashboardHome() {
     "The body achieves what the mind believes.",
     "Success isn't always about greatness. It's about consistency.",
     "You don't have to be great to get started, but you have to get started to be great.",
-    "The only impossible journey is the one you never begin."
-  ]
+    "The only impossible journey is the one you never begin.",
+  ];
 
   // Calculate total calories from workout data
   const calculateTotalCalories = (workouts) => {
-    if (!workouts || !Array.isArray(workouts)) return 0
-    
+    if (!workouts || !Array.isArray(workouts)) return 0;
+
     // Sum up calories from all workouts
     const totalCalories = workouts.reduce((sum, workout) => {
-      return sum + (workout.calories_burned || 0)
-    }, 0)
-    
-    return totalCalories
-  }
+      return sum + (workout.calories_burned || 0);
+    }, 0);
 
+    return totalCalories;
+  };
 
   // Fetch data function
   const fetchData = async () => {
     try {
-      setLoading(true)
-      setError('')
-      const token = localStorage.getItem('access_token')
-      
+      setLoading(true);
+      setError("");
+      const token = localStorage.getItem("access_token");
+
       // Fetch user data
       const userRes = await fetch(`${API_BASE_URL}/api/users/me`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (userRes.ok) {
-        const userData = await userRes.json()
-        setUser(userData)
+        const userData = await userRes.json();
+        setUser(userData);
       }
 
       // Fetch goals data
       const goalsRes = await fetch(`${API_BASE_URL}/api/goals/`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (goalsRes.ok) {
-        const goalsData = await goalsRes.json()
-        setGoals(Array.isArray(goalsData) ? goalsData.slice(0, 3) : [])
+        const goalsData = await goalsRes.json();
+        setGoals(Array.isArray(goalsData) ? goalsData.slice(0, 3) : []);
       }
 
       // Fetch recent workouts
       const workoutsRes = await fetch(`${API_BASE_URL}/api/workouts/`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (workoutsRes.ok) {
-        const workoutsData = await workoutsRes.json()
+        const workoutsData = await workoutsRes.json();
         // Sort by performed_at date (most recent first) and take first 3
-        const sortedWorkouts = Array.isArray(workoutsData) 
+        const sortedWorkouts = Array.isArray(workoutsData)
           ? workoutsData
-              .sort((a, b) => new Date(b.performed_at).getTime() - new Date(a.performed_at).getTime())
+              .sort(
+                (a, b) =>
+                  new Date(b.performed_at).getTime() -
+                  new Date(a.performed_at).getTime(),
+              )
               .slice(0, 3)
-          : []
-        setWorkouts(sortedWorkouts)
-        
+          : [];
+        setWorkouts(sortedWorkouts);
+
         // Calculate total calories from all workouts (not just recent ones)
-        const allWorkouts = Array.isArray(workoutsData) ? workoutsData : []
-        const totalCalories = calculateTotalCalories(allWorkouts)
-        setDailyCalories(totalCalories)
+        const allWorkouts = Array.isArray(workoutsData) ? workoutsData : [];
+        const totalCalories = calculateTotalCalories(allWorkouts);
+        setDailyCalories(totalCalories);
       }
     } catch (e) {
-      setError(e.message)
+      setError(e.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    fetchData();
+  }, []);
 
   // Get random motivational quote
   const getRandomQuote = () => {
-    return motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]
-  }
+    return motivationalQuotes[
+      Math.floor(Math.random() * motivationalQuotes.length)
+    ];
+  };
 
   // Set initial quote
   useEffect(() => {
-    setCurrentQuote(getRandomQuote())
-  }, [])
+    setCurrentQuote(getRandomQuote());
+  }, []);
 
   // Refresh quote function
   const refreshQuote = () => {
-    setCurrentQuote(getRandomQuote())
-  }
+    setCurrentQuote(getRandomQuote());
+  };
 
   // Refresh all data function
   const refreshData = () => {
-    setLoading(true)
-    fetchData()
-  }
+    setLoading(true);
+    fetchData();
+  };
 
   // Get user's first name
   const getFirstName = () => {
-    if (!user?.full_name) return 'Champion'
-    return user.full_name.split(' ')[0]
-  }
+    if (!user?.full_name) return "Champion";
+    return user.full_name.split(" ")[0];
+  };
 
   return (
     <div className="space-y-6">
@@ -162,18 +167,26 @@ export default function DashboardHome() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Steps', value: '2,500' },
-          { label: 'Water', value: '1.25 Liters' },
-          { 
-            label: 'Calories Burned', 
-            value: dailyCalories > 0 ? `${Math.round(dailyCalories)} cal` : 'No data',
-            subtitle: 'Based on workout data'
+          { label: "Steps", value: "2,500" },
+          { label: "Water", value: "1.25 Liters" },
+          {
+            label: "Calories Burned",
+            value:
+              dailyCalories > 0
+                ? `${Math.round(dailyCalories)} cal`
+                : "No data",
+            subtitle: "Based on workout data",
           },
-          { label: 'Heart Rate', value: '110 Bpm' },
+          { label: "Heart Rate", value: "110 Bpm" },
         ].map((card) => (
-          <div key={card.label} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div
+            key={card.label}
+            className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+          >
             <div className="text-sm text-gray-500">{card.label}</div>
-            <div className="mt-2 text-2xl font-semibold text-primary-700">{card.value}</div>
+            <div className="mt-2 text-2xl font-semibold text-primary-700">
+              {card.value}
+            </div>
             {card.subtitle && (
               <div className="text-xs text-gray-400 mt-1">{card.subtitle}</div>
             )}
@@ -197,9 +210,16 @@ export default function DashboardHome() {
                 <li className="text-sm text-gray-500">No goals yet.</li>
               ) : (
                 goals.map((g) => (
-                  <li key={g.id || g.title} className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
-                    <span className="font-medium text-gray-800">{g.title || g.name}</span>
-                    <span className="text-xs text-gray-500">{g.status || ''}</span>
+                  <li
+                    key={g.id || g.title}
+                    className="flex items-center justify-between rounded-lg border border-gray-200 p-3"
+                  >
+                    <span className="font-medium text-gray-800">
+                      {g.title || g.name}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {g.status || ""}
+                    </span>
                   </li>
                 ))
               )}
@@ -214,22 +234,34 @@ export default function DashboardHome() {
             <div className="h-6 w-6 rounded bg-blue-100 grid place-items-center">
               <span className="text-blue-600 text-sm font-bold">💪</span>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">Recent Workouts</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Recent Workouts
+            </h3>
           </div>
           <div className="space-y-2">
             {workouts.length === 0 ? (
               <>
-                <div className="text-sm text-gray-500">No recent workouts logged</div>
-                <div className="text-xs text-gray-400">Start logging your workouts to see them here</div>
+                <div className="text-sm text-gray-500">
+                  No recent workouts logged
+                </div>
+                <div className="text-xs text-gray-400">
+                  Start logging your workouts to see them here
+                </div>
               </>
             ) : (
               workouts.map((workout) => (
-                <div key={workout.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                <div
+                  key={workout.id}
+                  className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                >
                   <div className="flex-1">
-                    <div className="font-medium text-gray-900 text-sm">{workout.title}</div>
+                    <div className="font-medium text-gray-900 text-sm">
+                      {workout.title}
+                    </div>
                     <div className="text-xs text-gray-500">
-                      {new Date(workout.performed_at).toLocaleDateString()} 
-                      {workout.duration_minutes && ` • ${workout.duration_minutes} min`}
+                      {new Date(workout.performed_at).toLocaleDateString()}
+                      {workout.duration_minutes &&
+                        ` • ${workout.duration_minutes} min`}
                     </div>
                   </div>
                   <div className="text-right">
@@ -276,7 +308,9 @@ export default function DashboardHome() {
             <div className="h-6 w-6 rounded bg-purple-100 grid place-items-center">
               <span className="text-purple-600 text-sm font-bold">🎯</span>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Quick Actions
+            </h3>
           </div>
           <div className="space-y-2">
             <button className="w-full text-left p-2 text-sm text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
@@ -292,7 +326,5 @@ export default function DashboardHome() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-
-

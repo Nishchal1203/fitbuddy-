@@ -1,13 +1,13 @@
-'use client'
+"use client";
 
-import React from 'react'
-import Image from 'next/image'
-import AiIcon from '@/assets/AI_icon.svg'
-import { Button } from '@/components/ui'
+import React from "react";
+import Image from "next/image";
+import AiIcon from "@/assets/AI_icon.svg";
+import { Button } from "@/components/ui";
 
 type FloatingAiButtonProps = {
-  onClick?: () => void
-}
+  onClick?: () => void;
+};
 
 export default function FloatingAiButton({ onClick }: FloatingAiButtonProps) {
   return (
@@ -27,5 +27,5 @@ export default function FloatingAiButton({ onClick }: FloatingAiButtonProps) {
         className="relative z-10 transition-transform duration-300 group-hover:scale-105"
       />
     </Button>
-  )
+  );
 }

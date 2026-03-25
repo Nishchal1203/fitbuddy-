@@ -1,14 +1,36 @@
-'use client'
+"use client";
 
 /* ─────────────────────────────────────────────
    REUSABLE PULSE PRIMITIVES
 ───────────────────────────────────────────── */
-function Pulse({ className, style }: { className: string; style?: React.CSSProperties }) {
-  return <div className={`animate-pulse rounded-xl bg-brand-pale ${className}`} style={style} />
+function Pulse({
+  className,
+  style,
+}: {
+  className: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div
+      className={`animate-pulse rounded-xl bg-brand-pale ${className}`}
+      style={style}
+    />
+  );
 }
 
-function PulseCircle({ className, style }: { className: string; style?: React.CSSProperties }) {
-  return <div className={`animate-pulse rounded-full bg-brand-pale ${className}`} style={style} />
+function PulseCircle({
+  className,
+  style,
+}: {
+  className: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div
+      className={`animate-pulse rounded-full bg-brand-pale ${className}`}
+      style={style}
+    />
+  );
 }
 
 /* ─────────────────────────────────────────────
@@ -39,12 +61,25 @@ function WeightTrendSkeleton() {
       </div>
       {/* x-axis labels */}
       <div className="mt-2 flex justify-between px-2">
-        {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m) => (
+        {[
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ].map((m) => (
           <Pulse key={m} className="h-2.5 w-5" />
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 /* ─────────────────────────────────────────────
@@ -78,7 +113,7 @@ function BodyMeasurementsSkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 /* ─────────────────────────────────────────────
@@ -118,7 +153,7 @@ function MonthlySummarySkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 /* ─────────────────────────────────────────────
@@ -153,7 +188,10 @@ function StreakCounterSkeleton() {
             <div key={i} className="flex flex-col items-center gap-1">
               <div
                 className="animate-pulse w-6 rounded-lg bg-brand-pale"
-                style={{ height: `${32 + (i % 3) * 8}px`, animationDelay: `${i * 70}ms` }}
+                style={{
+                  height: `${32 + (i % 3) * 8}px`,
+                  animationDelay: `${i * 70}ms`,
+                }}
               />
               <Pulse className="h-2 w-5" />
             </div>
@@ -176,7 +214,7 @@ function StreakCounterSkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 /* ─────────────────────────────────────────────
@@ -203,7 +241,11 @@ function AchievementBadgesSkeleton() {
       {/* category pills */}
       <div className="mb-4 flex gap-2">
         {[...Array(6)].map((_, i) => (
-          <Pulse key={i} className="h-7 w-16 rounded-full" style={{ animationDelay: `${i * 50}ms` } as React.CSSProperties} />
+          <Pulse
+            key={i}
+            className="h-7 w-16 rounded-full"
+            style={{ animationDelay: `${i * 50}ms` } as React.CSSProperties}
+          />
         ))}
       </div>
 
@@ -232,7 +274,7 @@ function AchievementBadgesSkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 /* ─────────────────────────────────────────────
@@ -259,7 +301,7 @@ export default function ProgressPageSkeleton() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 /* ─────────────────────────────────────────────
@@ -271,4 +313,4 @@ export {
   MonthlySummarySkeleton,
   StreakCounterSkeleton,
   AchievementBadgesSkeleton,
-}
+};

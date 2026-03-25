@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import React, { Suspense } from 'react'
+import React, { Suspense } from "react";
 import {
   WeightTrendChart,
   BodyMeasurementsCard,
@@ -12,19 +12,19 @@ import {
   MonthlySummarySkeleton,
   StreakCounterSkeleton,
   AchievementBadgesSkeleton,
-} from '@/components/progress'
+} from "@/components/progress";
 
 export default function ProgressPage() {
   return (
     <div className="space-y-6 p-6">
-
       {/* ── Page heading ── */}
       <div>
         <h1 className="text-2xl font-bold text-brand-slate">
           Fitness Progress &amp; Achievements
         </h1>
         <p className="mt-1 text-sm text-brand-slate/55">
-          All stats auto-updated from your workouts, diet logs, and goals — no manual entry needed.
+          All stats auto-updated from your workouts, diet logs, and goals — no
+          manual entry needed.
         </p>
       </div>
 
@@ -53,7 +53,6 @@ export default function ProgressPage() {
           <AchievementBadges />
         </Suspense>
       </div>
-
     </div>
-  )
+  );
 }

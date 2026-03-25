@@ -1,85 +1,88 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react'
-import { Plus, X, Clock, FileText, Dumbbell } from 'lucide-react'
-import ExerciseSelector from './ExerciseSelector'
+import React, { useState } from "react";
+import { Plus, X, Clock, FileText, Dumbbell } from "lucide-react";
+import ExerciseSelector from "./ExerciseSelector";
 
-const API_BASE_URL = 'http://localhost:8000'
+const API_BASE_URL = "http://localhost:8000";
 
 export default function WorkoutForm() {
   const [formData, setFormData] = useState({
-    title: '',
-    notes: '',
-    duration_minutes: '',
-    performed_at: new Date().toISOString().slice(0, 16) // YYYY-MM-DDTHH:MM format
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [showExerciseSelector, setShowExerciseSelector] = useState(false)
-  const [selectedExercises, setSelectedExercises] = useState([])
+    title: "",
+    notes: "",
+    duration_minutes: "",
+    performed_at: new Date().toISOString().slice(0, 16), // YYYY-MM-DDTHH:MM format
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showExerciseSelector, setShowExerciseSelector] = useState(false);
+  const [selectedExercises, setSelectedExercises] = useState([]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setSuccess('')
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
 
     try {
-      const token = localStorage.getItem('access_token')
+      const token = localStorage.getItem("access_token");
       const response = await fetch(`${API_BASE_URL}/api/workouts/`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           ...formData,
-          duration_minutes: formData.duration_minutes ? parseInt(formData.duration_minutes) : null,
-          performed_at: formData.performed_at ? new Date(formData.performed_at).toISOString() : null,
-          exercises: selectedExercises
-        })
-      })
+          duration_minutes: formData.duration_minutes
+            ? parseInt(formData.duration_minutes)
+            : null,
+          performed_at: formData.performed_at
+            ? new Date(formData.performed_at).toISOString()
+            : null,
+          exercises: selectedExercises,
+        }),
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to create workout')
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to create workout");
       }
 
-      const workoutData = await response.json()
-      setSuccess(`Workout "${workoutData.title}" logged successfully!`)
-      
+      const workoutData = await response.json();
+      setSuccess(`Workout "${workoutData.title}" logged successfully!`);
+
       // Reset form
       setFormData({
-        title: '',
-        notes: '',
-        duration_minutes: '',
-        performed_at: new Date().toISOString().slice(0, 16)
-      })
-      setSelectedExercises([])
-
+        title: "",
+        notes: "",
+        duration_minutes: "",
+        performed_at: new Date().toISOString().slice(0, 16),
+      });
+      setSelectedExercises([]);
     } catch (err) {
-      setError(err.message)
+      setError(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
+    const { name, value } = e.target;
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
-    }))
-  }
+      [name]: value,
+    }));
+  };
 
   const handleExerciseSelect = (exercise) => {
-    setSelectedExercises(prev => [...prev, exercise])
-  }
+    setSelectedExercises((prev) => [...prev, exercise]);
+  };
 
   const handleRemoveExercise = (exerciseId) => {
-    setSelectedExercises(prev => prev.filter(ex => ex.id !== exerciseId))
-  }
+    setSelectedExercises((prev) => prev.filter((ex) => ex.id !== exerciseId));
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
@@ -106,7 +109,10 @@ export default function WorkoutForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4" data-lpignore="true">
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="title"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Workout Title *
           </label>
           <input
@@ -136,19 +142,26 @@ export default function WorkoutForm() {
               Add Exercise
             </button>
           </div>
-          
+
           {selectedExercises.length === 0 ? (
             <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
               <Dumbbell size={24} className="mx-auto mb-2" />
               <p className="text-sm">No exercises selected</p>
-              <p className="text-xs">Click "Add Exercise" to include exercises in your workout</p>
+              <p className="text-xs">
+                Click "Add Exercise" to include exercises in your workout
+              </p>
             </div>
           ) : (
             <div className="space-y-2">
               {selectedExercises.map((exercise) => (
-                <div key={exercise.id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <div
+                  key={exercise.id}
+                  className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg"
+                >
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{exercise.name}</h4>
+                    <h4 className="font-medium text-gray-900">
+                      {exercise.name}
+                    </h4>
                     <p className="text-sm text-gray-600">{exercise.category}</p>
                   </div>
                   <button
@@ -166,7 +179,10 @@ export default function WorkoutForm() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="performed_at" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="performed_at"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Date & Time
             </label>
             <div className="relative">
@@ -178,12 +194,18 @@ export default function WorkoutForm() {
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900"
               />
-              <Clock size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Clock
+                size={16}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              />
             </div>
           </div>
 
           <div>
-            <label htmlFor="duration_minutes" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="duration_minutes"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Duration (minutes)
             </label>
             <input
@@ -200,7 +222,10 @@ export default function WorkoutForm() {
         </div>
 
         <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="notes"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Notes
           </label>
           <div className="relative">
@@ -213,7 +238,10 @@ export default function WorkoutForm() {
               placeholder="How did the workout feel? Any observations or notes..."
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 resize-none"
             />
-            <FileText size={16} className="absolute right-3 top-3 text-gray-400" />
+            <FileText
+              size={16}
+              className="absolute right-3 top-3 text-gray-400"
+            />
           </div>
         </div>
 
@@ -222,25 +250,25 @@ export default function WorkoutForm() {
             type="submit"
             disabled={loading}
             className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-colors ${
-              loading 
-                ? 'bg-gray-400 text-white cursor-not-allowed' 
-                : 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-2 focus:ring-primary-500'
+              loading
+                ? "bg-gray-400 text-white cursor-not-allowed"
+                : "bg-primary-600 text-white hover:bg-primary-700 focus:ring-2 focus:ring-primary-500"
             }`}
           >
-            {loading ? 'Logging Workout...' : 'Log Workout'}
+            {loading ? "Logging Workout..." : "Log Workout"}
           </button>
-          
+
           <button
             type="button"
             onClick={() => {
               setFormData({
-                title: '',
-                notes: '',
-                duration_minutes: '',
-                performed_at: new Date().toISOString().slice(0, 16)
-              })
-              setError('')
-              setSuccess('')
+                title: "",
+                notes: "",
+                duration_minutes: "",
+                performed_at: new Date().toISOString().slice(0, 16),
+              });
+              setError("");
+              setSuccess("");
             }}
             className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-primary-500"
           >
@@ -256,5 +284,5 @@ export default function WorkoutForm() {
         onSelect={handleExerciseSelect}
       />
     </div>
-  )
+  );
 }

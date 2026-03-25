@@ -1,53 +1,56 @@
-'use client'
+"use client";
 
-import React, { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { ChevronDown, UserCircle2 } from 'lucide-react'
-import { Button } from '@/components/ui'
+import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ChevronDown, UserCircle2 } from "lucide-react";
+import { Button } from "@/components/ui";
+import LogoFull from "@/assets/Logo_full.svg";
+import Image from "next/image";
 
 export default function EnterpriseTopNav() {
-  const pathname = usePathname()
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const pathname = usePathname();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onClickOutside(event: MouseEvent) {
-      if (!menuRef.current) return
+      if (!menuRef.current) return;
       if (!menuRef.current.contains(event.target as Node)) {
-        setIsMenuOpen(false)
+        setIsMenuOpen(false);
       }
     }
 
     function onEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setIsMenuOpen(false)
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
       }
     }
 
-    document.addEventListener('mousedown', onClickOutside)
-    document.addEventListener('keydown', onEscape)
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onEscape);
     return () => {
-      document.removeEventListener('mousedown', onClickOutside)
-      document.removeEventListener('keydown', onEscape)
-    }
-  }, [])
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, []);
 
-  const aiTrainerActive = pathname?.startsWith('/without_sidebar/AI_trainer')
+  const aiTrainerActive = pathname?.startsWith("/without_sidebar/AI_trainer");
 
   return (
     <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur">
       <div className="flex h-16 items-center justify-between px-6">
         <div className="flex items-center gap-3">
-          <p className="text-sm font-semibold text-gray-800">FitBuddy</p>
+          <Image src={LogoFull} alt="FitBuddy" width={150} height={150} />
+          {/* <p className="text-sm font-semibold text-gray-800">FitBuddy</p> */}
         </div>
 
         <div className="flex items-center gap-3">
-          <Link href="/without_sidebar/AI_trainer">
+          <Link href="/without_sidebar/chat">
             <Button
-              variant={aiTrainerActive ? 'primary' : 'outline'}
+              variant={aiTrainerActive ? "primary" : "outline"}
               size="sm"
-              className="rounded-xl"
+              className="rounded-xl, border-brand-pale text-brand-slate bg-brand-pale hover:bg-brand-pale"
             >
               AI Trainer
             </Button>
@@ -84,5 +87,5 @@ export default function EnterpriseTopNav() {
         </div>
       </div>
     </header>
-  )
+  );
 }

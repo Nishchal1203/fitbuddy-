@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useRef, useState } from "react";
 import {
   ChevronRight,
   ImagePlus,
@@ -10,68 +10,72 @@ import {
   Upload,
   X,
   Zap,
-} from 'lucide-react'
-import { Button } from '@/components/ui/Button'
-import { Modal } from '@/components/ui/Modal'
+} from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 
 /* ─────────────────────────────────────────────
    TYPES
 ───────────────────────────────────────────── */
-export type AIMode = 'goal' | 'diet'
+export type AIMode = "goal" | "diet";
 
-export type AIActionData = Record<string, unknown>
+export type AIActionData = Record<string, unknown>;
 
 export type AIGoalAssistantProps = {
-  isOpen: boolean
-  mode: AIMode
-  onClose: () => void
+  isOpen: boolean;
+  mode: AIMode;
+  onClose: () => void;
   /** called with the parsed action payload when user clicks Apply */
-  onApply: (data: AIActionData) => void
+  onApply: (data: AIActionData) => void;
   /** optional — pre-fill user stats into the prompt */
   userContext?: {
-    name?: string
-    age?: number
-    weight?: number
-    height?: number
-    currentGoals?: string[]
-  }
-}
+    name?: string;
+    age?: number;
+    weight?: number;
+    height?: number;
+    currentGoals?: string[];
+  };
+};
 
-type AIResponse = (typeof MOCK_RESPONSES)[AIMode]
+type AIResponse = (typeof MOCK_RESPONSES)[AIMode];
 
 /* ─────────────────────────────────────────────
    MODE CONFIG
 ───────────────────────────────────────────── */
 const MODE_CONFIG = {
   goal: {
-    title:       'AI Goal Assistant',
-    subtitle:    'Describe your fitness vision and AI will build a smart goal for you',
-    placeholder: 'e.g. I want to get shredded like a sprinter, lose 10kg before summer, run a 5K…',
-    imageLabel:  'Physique Inspiration',
-    imageHint:   'Upload a photo for reference — AI will tailor your goal to match it',
-    applyLabel:  'Apply Goal Plan',
+    title: "AI Goal Assistant",
+    subtitle:
+      "Describe your fitness vision and AI will build a smart goal for you",
+    placeholder:
+      "e.g. I want to get shredded like a sprinter, lose 10kg before summer, run a 5K…",
+    imageLabel: "Physique Inspiration",
+    imageHint:
+      "Upload a photo for reference — AI will tailor your goal to match it",
+    applyLabel: "Apply Goal Plan",
     examplePrompts: [
-      'Lose 8kg in 3 months',
-      'Build lean muscle like a swimmer',
-      'Run a 5K without stopping',
-      'Improve sleep to 8 hrs avg',
+      "Lose 8kg in 3 months",
+      "Build lean muscle like a swimmer",
+      "Run a 5K without stopping",
+      "Improve sleep to 8 hrs avg",
     ],
   },
   diet: {
-    title:       'AI Diet Planner',
-    subtitle:    'Tell AI your food preferences and it will design your meal plan',
-    placeholder: 'e.g. High protein vegetarian diet, I am lactose intolerant, want to bulk…',
-    imageLabel:  'Meal / Food Label',
-    imageHint:   'Upload a meal or food label — AI will suggest healthier swaps',
-    applyLabel:  'Apply Meal Plan',
+    title: "AI Diet Planner",
+    subtitle: "Tell AI your food preferences and it will design your meal plan",
+    placeholder:
+      "e.g. High protein vegetarian diet, I am lactose intolerant, want to bulk…",
+    imageLabel: "Meal / Food Label",
+    imageHint: "Upload a meal or food label — AI will suggest healthier swaps",
+    applyLabel: "Apply Meal Plan",
     examplePrompts: [
-      'High protein veg diet under 1800 kcal',
-      'Keto plan for weight loss',
-      'Eat like an athlete',
-      'Low carb with no gluten',
+      "High protein veg diet under 1800 kcal",
+      "Keto plan for weight loss",
+      "Eat like an athlete",
+      "Low carb with no gluten",
     ],
   },
-} satisfies Record<AIMode, object>
+} satisfies Record<AIMode, object>;
 
 /* ─────────────────────────────────────────────
    MOCK RESPONSES  (replace with real API later)
@@ -81,43 +85,43 @@ const MOCK_RESPONSES = {
     summary:
       "Great vision! Based on what you've shared, I've designed a progressive plan targeting body composition and endurance. We'll combine strength training with HIIT phases to get you there in 90 days.",
     suggestions: [
-      '4 strength sessions per week with progressive overload',
-      'HIIT cardio 3× weekly — 20 min sessions',
-      'Calorie deficit of 300–400 kcal/day for fat loss',
-      'Track weekly measurements every Monday morning',
+      "4 strength sessions per week with progressive overload",
+      "HIIT cardio 3× weekly — 20 min sessions",
+      "Calorie deficit of 300–400 kcal/day for fat loss",
+      "Track weekly measurements every Monday morning",
     ],
-    action_label: 'Start Fat Loss Plan',
+    action_label: "Start Fat Loss Plan",
     action_data: {
-      title:          'Fat Loss & Shred',
-      category:       'Fitness',
-      target_value:   12,
-      target_unit:    '%',
-      duration_days:  90,
-      difficulty:     'intermediate',
-      focus_areas:    ['HIIT', 'Strength', 'Nutrition'],
+      title: "Fat Loss & Shred",
+      category: "Fitness",
+      target_value: 12,
+      target_unit: "%",
+      duration_days: 90,
+      difficulty: "intermediate",
+      focus_areas: ["HIIT", "Strength", "Nutrition"],
     },
   },
   diet: {
     summary:
       "Perfect — I've built a high-protein plan around your preferences. This balances macros to support muscle retention while keeping calories in check. Meal timing is optimised for your training schedule.",
     suggestions: [
-      'Target 180g protein daily across 4 meals',
-      'Carbs timed around workouts for energy',
-      'Healthy fats from nuts, avocado and olive oil',
-      'Hydration goal: 3L water + 1 electrolyte drink',
+      "Target 180g protein daily across 4 meals",
+      "Carbs timed around workouts for energy",
+      "Healthy fats from nuts, avocado and olive oil",
+      "Hydration goal: 3L water + 1 electrolyte drink",
     ],
-    action_label: 'Apply High Protein Plan',
+    action_label: "Apply High Protein Plan",
     action_data: {
       calorie_target: 2100,
-      protein_g:      180,
-      carbs_g:        210,
-      fat_g:          65,
-      meal_count:     4,
-      diet_type:      'high-protein',
-      restrictions:   [],
+      protein_g: 180,
+      carbs_g: 210,
+      fat_g: 65,
+      meal_count: 4,
+      diet_type: "high-protein",
+      restrictions: [],
     },
   },
-}
+};
 
 /* ─────────────────────────────────────────────
    TYPING DOTS
@@ -133,7 +137,7 @@ function TypingDots() {
         />
       ))}
     </div>
-  )
+  );
 }
 
 /* ─────────────────────────────────────────────
@@ -144,22 +148,25 @@ function AIResponseCard({
   onApply,
   onReset,
 }: {
-  response: AIResponse
-  onApply: (data: AIActionData) => void
-  onReset: () => void
+  response: AIResponse;
+  onApply: (data: AIActionData) => void;
+  onReset: () => void;
 }) {
   return (
     <div className="space-y-4">
-
       {/* summary bubble */}
       <div className="rounded-2xl bg-gradient-to-br from-[#F0E4F9] to-[#E8D4F5] p-4">
         <div className="mb-2.5 flex items-center gap-2">
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-brand-soft to-brand-deep">
             <Sparkles size={11} className="text-white" />
           </div>
-          <span className="text-xs font-bold text-brand-purple">AI Recommendation</span>
+          <span className="text-xs font-bold text-brand-purple">
+            AI Recommendation
+          </span>
         </div>
-        <p className="text-sm leading-relaxed text-brand-slate">{response.summary}</p>
+        <p className="text-sm leading-relaxed text-brand-slate">
+          {response.summary}
+        </p>
       </div>
 
       {/* action plan chips */}
@@ -201,7 +208,7 @@ function AIResponseCard({
         </Button>
       </div>
     </div>
-  )
+  );
 }
 
 /* ─────────────────────────────────────────────
@@ -214,92 +221,104 @@ export default function AIGoalAssistant({
   onApply,
   userContext,
 }: AIGoalAssistantProps) {
-  const cfg = MODE_CONFIG[mode]
+  const cfg = MODE_CONFIG[mode];
 
-  const [prompt,       setPrompt]       = useState('')
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [loading,      setLoading]      = useState(false)
-  const [error,        setError]        = useState('')
-  const [response,     setResponse]     = useState<AIResponse | null>(null)
-  const [dragOver,     setDragOver]     = useState(false)
+  const [prompt, setPrompt] = useState("");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [response, setResponse] = useState<AIResponse | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const textareaRef  = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   /* ── image handling ── */
   function handleFile(file: File) {
-    if (!file.type.startsWith('image/')) { setError('Please upload an image file.'); return }
-    if (file.size > 5 * 1024 * 1024)    { setError('Image must be under 5MB.'); return }
-    setImagePreview(URL.createObjectURL(file))
-    setError('')
+    if (!file.type.startsWith("image/")) {
+      setError("Please upload an image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be under 5MB.");
+      return;
+    }
+    setImagePreview(URL.createObjectURL(file));
+    setError("");
   }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (file) handleFile(file)
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
   }
 
   function handleDrop(e: React.DragEvent) {
-    e.preventDefault()
-    setDragOver(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) handleFile(file)
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
   }
 
   function removeImage() {
-    setImagePreview(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   /* ── textarea auto-grow ── */
   function handlePromptChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    setPrompt(e.target.value)
-    const ta = textareaRef.current
-    if (ta) { ta.style.height = 'auto'; ta.style.height = `${ta.scrollHeight}px` }
+    setPrompt(e.target.value);
+    const ta = textareaRef.current;
+    if (ta) {
+      ta.style.height = "auto";
+      ta.style.height = `${ta.scrollHeight}px`;
+    }
   }
 
   /* ── use example prompt ── */
   function useExample(ex: string) {
-    setPrompt(ex)
-    setTimeout(() => textareaRef.current?.focus(), 50)
+    setPrompt(ex);
+    setTimeout(() => textareaRef.current?.focus(), 50);
   }
 
   /* ── generate (mock — swap with real API call later) ── */
   async function handleGenerate() {
-    if (!prompt.trim()) { setError('Please describe your vision first.'); return }
-    setLoading(true)
-    setError('')
-    setResponse(null)
+    if (!prompt.trim()) {
+      setError("Please describe your vision first.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    setResponse(null);
 
     // simulate network latency
-    await new Promise((r) => setTimeout(r, 2000))
+    await new Promise((r) => setTimeout(r, 2000));
 
-    setResponse(MOCK_RESPONSES[mode])
-    setLoading(false)
+    setResponse(MOCK_RESPONSES[mode]);
+    setLoading(false);
   }
 
   /* ── reset ── */
   function handleReset() {
-    setResponse(null)
-    setError('')
+    setResponse(null);
+    setError("");
   }
 
   /* ── close + cleanup ── */
   function handleClose() {
-    setPrompt('')
-    setImagePreview(null)
-    setLoading(false)
-    setError('')
-    setResponse(null)
-    onClose()
+    setPrompt("");
+    setImagePreview(null);
+    setLoading(false);
+    setError("");
+    setResponse(null);
+    onClose();
   }
 
   function handleApply(data: AIActionData) {
-    onApply(data)
-    handleClose()
+    onApply(data);
+    handleClose();
   }
 
-  const canGenerate = prompt.trim().length > 3 && !loading
+  const canGenerate = prompt.trim().length > 3 && !loading;
 
   return (
     <Modal
@@ -309,9 +328,10 @@ export default function AIGoalAssistant({
       className="max-w-[540px] overflow-hidden !p-0 bg-white"
     >
       <div className="flex flex-col">
-
         {/* ── Gradient header ── */}
-        <div className={`relative bg-gradient-to-br from-brand-soft via-brand-purple to-brand-deep px-6 pb-6 pt-5`}>
+        <div
+          className={`relative bg-gradient-to-br from-brand-soft via-brand-purple to-brand-deep px-6 pb-6 pt-5`}
+        >
           {/* close button */}
           <button
             onClick={handleClose}
@@ -336,15 +356,17 @@ export default function AIGoalAssistant({
             <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs text-white/85">
               <span className="h-1.5 w-1.5 rounded-full bg-brand-gold" />
               Personalised for {userContext.name}
-              {userContext.weight ? ` · ${userContext.weight}kg` : ''}
-              {userContext.age    ? ` · ${userContext.age}y`     : ''}
+              {userContext.weight ? ` · ${userContext.weight}kg` : ""}
+              {userContext.age ? ` · ${userContext.age}y` : ""}
             </div>
           )}
         </div>
 
         {/* ── Body ── */}
-        <div className="space-y-4 overflow-y-auto p-5" style={{ maxHeight: '70vh' }}>
-
+        <div
+          className="space-y-4 overflow-y-auto p-5"
+          style={{ maxHeight: "70vh" }}
+        >
           {!response ? (
             <>
               {/* prompt input */}
@@ -360,11 +382,11 @@ export default function AIGoalAssistant({
                     placeholder={cfg.placeholder}
                     rows={3}
                     className="w-full resize-none rounded-2xl bg-transparent px-4 py-3 text-sm text-brand-slate outline-none placeholder:text-brand-slate/35"
-                    style={{ minHeight: '80px', maxHeight: '160px' }}
+                    style={{ minHeight: "80px", maxHeight: "160px" }}
                   />
                   {prompt && (
                     <button
-                      onClick={() => setPrompt('')}
+                      onClick={() => setPrompt("")}
                       className="absolute right-3 top-3 text-brand-slate/30 hover:text-brand-slate transition-colors"
                     >
                       <X size={14} />
@@ -374,9 +396,13 @@ export default function AIGoalAssistant({
 
                 {/* char counter */}
                 <div className="mt-1 flex items-center justify-between">
-                  <span className="text-[10px] text-brand-slate/35">{prompt.length} characters</span>
+                  <span className="text-[10px] text-brand-slate/35">
+                    {prompt.length} characters
+                  </span>
                   {prompt.length > 0 && prompt.length < 10 && (
-                    <span className="text-[10px] text-brand-gold">Add more detail for better results</span>
+                    <span className="text-[10px] text-brand-gold">
+                      Add more detail for better results
+                    </span>
                   )}
                 </div>
               </div>
@@ -402,7 +428,10 @@ export default function AIGoalAssistant({
               {/* image upload */}
               <div>
                 <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-brand-slate/50">
-                  {cfg.imageLabel} <span className="font-normal normal-case text-brand-slate/30">(optional)</span>
+                  {cfg.imageLabel}{" "}
+                  <span className="font-normal normal-case text-brand-slate/30">
+                    (optional)
+                  </span>
                 </label>
 
                 {imagePreview ? (
@@ -420,33 +449,46 @@ export default function AIGoalAssistant({
                       <X size={13} />
                     </button>
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2">
-                      <p className="text-[10px] font-semibold text-white/80">✓ Image attached — AI will analyse this</p>
+                      <p className="text-[10px] font-semibold text-white/80">
+                        ✓ Image attached — AI will analyse this
+                      </p>
                     </div>
                   </div>
                 ) : (
                   /* drop zone */
                   <div
-                    onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOver(true);
+                    }}
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleDrop}
                     onClick={() => fileInputRef.current?.click()}
                     className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-4 py-6 text-center transition-all ${
                       dragOver
-                        ? 'border-brand-purple bg-brand-pale/50 scale-[1.01]'
-                        : 'border-brand-mauve/60 bg-brand-bg hover:border-brand-purple hover:bg-brand-pale/30'
+                        ? "border-brand-purple bg-brand-pale/50 scale-[1.01]"
+                        : "border-brand-mauve/60 bg-brand-bg hover:border-brand-purple hover:bg-brand-pale/30"
                     }`}
                   >
                     <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-soft to-brand-deep text-white shadow-sm">
-                      {dragOver ? <Upload size={18} /> : <ImagePlus size={18} />}
+                      {dragOver ? (
+                        <Upload size={18} />
+                      ) : (
+                        <ImagePlus size={18} />
+                      )}
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-brand-slate/70">
-                        {dragOver ? 'Drop it here!' : 'Drag & drop or click to upload'}
+                        {dragOver
+                          ? "Drop it here!"
+                          : "Drag & drop or click to upload"}
                       </p>
                       <p className="mt-0.5 text-[10px] text-brand-slate/40">
                         {cfg.imageHint}
                       </p>
-                      <p className="mt-0.5 text-[10px] text-brand-slate/30">JPG, PNG, WEBP · max 5MB</p>
+                      <p className="mt-0.5 text-[10px] text-brand-slate/30">
+                        JPG, PNG, WEBP · max 5MB
+                      </p>
                     </div>
                   </div>
                 )}
@@ -488,7 +530,7 @@ export default function AIGoalAssistant({
                   ) : (
                     <>
                       <Sparkles size={15} />
-                      Generate {mode === 'goal' ? 'Goal' : 'Meal Plan'}
+                      Generate {mode === "goal" ? "Goal" : "Meal Plan"}
                       <Zap size={13} />
                     </>
                   )}
@@ -500,7 +542,8 @@ export default function AIGoalAssistant({
                 <div className="flex items-center gap-3 rounded-2xl border border-brand-pale bg-brand-bg px-4 py-3">
                   <TypingDots />
                   <p className="text-xs text-brand-slate/55 animate-pulse">
-                    AI is analysing your vision{imagePreview ? ' and photo' : ''}…
+                    AI is analysing your vision
+                    {imagePreview ? " and photo" : ""}…
                   </p>
                 </div>
               )}
@@ -513,9 +556,8 @@ export default function AIGoalAssistant({
               onReset={handleReset}
             />
           )}
-
         </div>
       </div>
     </Modal>
-  )
+  );
 }

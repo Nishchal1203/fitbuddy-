@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react'
-import { X, TrendingUp, Calendar, Target } from 'lucide-react'
+import React, { useState } from "react";
+import { X, TrendingUp, Calendar, Target } from "lucide-react";
 import {
   Alert,
   Button,
@@ -10,95 +10,96 @@ import {
   CardHeader,
   CardTitle,
   Input,
-  useToast
-} from '@/components/ui'
-import { API_BASE_URL, buildAuthHeaders, readErrorMessage } from '@/lib/api'
+  useToast,
+} from "@/components/ui";
+import { API_BASE_URL, buildAuthHeaders, readErrorMessage } from "@/lib/api";
 
 export default function ProgressForm({ onProgressAdded }) {
-  const { showToast } = useToast()
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD format
-    metric_name: '',
-    metric_value: '',
-    unit: ''
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+    metric_name: "",
+    metric_value: "",
+    unit: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const commonMetrics = [
-    { name: 'Weight', unit: 'kg' },
-    { name: 'Body Fat %', unit: '%' },
-    { name: 'Muscle Mass', unit: 'kg' },
-    { name: 'Steps', unit: 'steps' },
-    { name: 'Calories Burned', unit: 'calories' },
-    { name: 'Workout Duration', unit: 'minutes' },
-    { name: 'Distance Run', unit: 'km' },
-    { name: 'Push-ups', unit: 'reps' },
-    { name: 'Squats', unit: 'reps' },
-    { name: 'Plank Hold', unit: 'seconds' }
-  ]
+    { name: "Weight", unit: "kg" },
+    { name: "Body Fat %", unit: "%" },
+    { name: "Muscle Mass", unit: "kg" },
+    { name: "Steps", unit: "steps" },
+    { name: "Calories Burned", unit: "calories" },
+    { name: "Workout Duration", unit: "minutes" },
+    { name: "Distance Run", unit: "km" },
+    { name: "Push-ups", unit: "reps" },
+    { name: "Squats", unit: "reps" },
+    { name: "Plank Hold", unit: "seconds" },
+  ];
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/progress/`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          ...buildAuthHeaders({ 'Content-Type': 'application/json' })
+          ...buildAuthHeaders({ "Content-Type": "application/json" }),
         },
         body: JSON.stringify({
           ...formData,
-          metric_value: parseFloat(formData.metric_value)
-        })
-      })
+          metric_value: parseFloat(formData.metric_value),
+        }),
+      });
 
       if (!response.ok) {
-        throw new Error(await readErrorMessage(response, 'Failed to log progress'))
+        throw new Error(
+          await readErrorMessage(response, "Failed to log progress"),
+        );
       }
 
-      await response.json()
+      await response.json();
       showToast({
-        title: 'Progress logged',
+        title: "Progress logged",
         description: `${formData.metric_name} has been added successfully.`,
-        variant: 'success'
-      })
-      
+        variant: "success",
+      });
+
       setFormData({
         date: new Date().toISOString().slice(0, 10),
-        metric_name: '',
-        metric_value: '',
-        unit: ''
-      })
+        metric_name: "",
+        metric_value: "",
+        unit: "",
+      });
 
       if (onProgressAdded) {
-        onProgressAdded()
+        onProgressAdded();
       }
-
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
+    const { name, value } = e.target;
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
-    }))
-  }
+      [name]: value,
+    }));
+  };
 
   const handleMetricSelect = (metric) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       metric_name: metric.name,
-      unit: metric.unit
-    }))
-  }
+      unit: metric.unit,
+    }));
+  };
 
   return (
     <Card>
@@ -112,12 +113,20 @@ export default function ProgressForm({ onProgressAdded }) {
       </CardHeader>
       <CardContent>
         {error && (
-          <Alert variant="error" title="Could not log progress" className="mb-4">
+          <Alert
+            variant="error"
+            title="Could not log progress"
+            className="mb-4"
+          >
             {error}
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4" data-lpignore="true">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+          data-lpignore="true"
+        >
           <Input
             id="date"
             name="date"
@@ -130,13 +139,19 @@ export default function ProgressForm({ onProgressAdded }) {
           />
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Quick Select Metric</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Quick Select Metric
+            </label>
             <div className="grid grid-cols-2 gap-2">
               {commonMetrics.map((metric, index) => (
                 <Button
                   key={index}
                   type="button"
-                  variant={formData.metric_name === metric.name ? 'secondary' : 'outline'}
+                  variant={
+                    formData.metric_name === metric.name
+                      ? "secondary"
+                      : "outline"
+                  }
                   className="justify-start"
                   onClick={() => handleMetricSelect(metric)}
                 >
@@ -193,11 +208,11 @@ export default function ProgressForm({ onProgressAdded }) {
               onClick={() => {
                 setFormData({
                   date: new Date().toISOString().slice(0, 10),
-                  metric_name: '',
-                  metric_value: '',
-                  unit: ''
-                })
-                setError('')
+                  metric_name: "",
+                  metric_value: "",
+                  unit: "",
+                });
+                setError("");
               }}
             >
               <X size={18} />
@@ -206,5 +221,5 @@ export default function ProgressForm({ onProgressAdded }) {
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }
