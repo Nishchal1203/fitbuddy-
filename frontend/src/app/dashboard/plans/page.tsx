@@ -18,6 +18,7 @@ import AiIcon from '@/assets/AI_icon.svg'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import Add_Meal, { AddMealItem } from '@/components/diet-plan/Add_Meal'
+import AIGoalAssistant from '@/components/diet-plan/AI_chat'
 import {
   PieChart,
   Pie,
@@ -190,6 +191,7 @@ export default function DietPlanPage() {
   const [waterCups, setWaterCups] = useState(FILLED_CUPS)
   const [mealSections, setMealSections] = useState<MealSection[]>(INITIAL_MEALS)
   const [isAddMealOpen, setIsAddMealOpen] = useState(false)
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false)
   const { consumed, total } = CALORIE_DATA
   const remaining = total - consumed
 
@@ -298,9 +300,14 @@ export default function DietPlanPage() {
   <div className="flex items-start gap-4">
  
     {/* AI icon box — uses your custom SVG */}
-    <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-soft to-brand-deep shadow-md">
+    <button
+      type="button"
+      aria-label="Open AI assistant"
+      onClick={() => setIsAIAssistantOpen(true)}
+      className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-soft to-brand-deep shadow-md transition-transform hover:scale-105"
+    >
       <Image src={AiIcon} alt="AI" width={30} height={30} />
-    </div>
+    </button>
  
     <div className="space-y-1.5">
       <p className="font-semibold text-brand-slate">Smart Swap</p>
@@ -311,6 +318,7 @@ export default function DietPlanPage() {
         <Button
           variant="gold"
           size="sm"
+          onClick={() => setIsAIAssistantOpen(true)}
           className="rounded-xl px-4 py-1.5 text-xs font-bold text-white"
         >
           Try This
@@ -339,6 +347,13 @@ export default function DietPlanPage() {
         sections={mealSections.map((section) => section.title)}
         onClose={() => setIsAddMealOpen(false)}
         onAddMeals={handleAddMeals}
+      />
+
+      <AIGoalAssistant
+        isOpen={isAIAssistantOpen}
+        mode="diet"
+        onClose={() => setIsAIAssistantOpen(false)}
+        onApply={() => setIsAIAssistantOpen(false)}
       />
 
     </div>

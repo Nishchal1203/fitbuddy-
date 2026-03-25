@@ -1,0 +1,88 @@
+'use client'
+
+import React, { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { ChevronDown, UserCircle2 } from 'lucide-react'
+import { Button } from '@/components/ui'
+
+export default function EnterpriseTopNav() {
+  const pathname = usePathname()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onClickOutside(event: MouseEvent) {
+      if (!menuRef.current) return
+      if (!menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    function onEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', onClickOutside)
+    document.addEventListener('keydown', onEscape)
+    return () => {
+      document.removeEventListener('mousedown', onClickOutside)
+      document.removeEventListener('keydown', onEscape)
+    }
+  }, [])
+
+  const aiTrainerActive = pathname?.startsWith('/without_sidebar/AI_trainer')
+
+  return (
+    <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur">
+      <div className="flex h-16 items-center justify-between px-6">
+        <div className="flex items-center gap-3">
+          <p className="text-sm font-semibold text-gray-800">FitBuddy</p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Link href="/without_sidebar/AI_trainer">
+            <Button
+              variant={aiTrainerActive ? 'primary' : 'outline'}
+              size="sm"
+              className="rounded-xl"
+            >
+              AI Trainer
+            </Button>
+          </Link>
+
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen((prev) => !prev)}
+              className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+              aria-expanded={isMenuOpen}
+              aria-haspopup="menu"
+            >
+              <UserCircle2 size={22} className="text-gray-600" />
+              <ChevronDown size={16} className="text-gray-500" />
+            </button>
+
+            {isMenuOpen && (
+              <div
+                className="absolute right-0 mt-2 w-44 rounded-xl border border-gray-200 bg-white p-1.5 shadow-lg"
+                role="menu"
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+                  role="menuitem"
+                >
+                  Edit profile
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
+  )
+}

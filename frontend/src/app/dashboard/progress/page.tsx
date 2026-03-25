@@ -1,29 +1,59 @@
 'use client'
 
-import React, { useState } from 'react'
-import ProgressChart from '@/components/ProgressChart'
-import ProgressForm from '@/components/ProgressForm'
+import React, { Suspense } from 'react'
+import {
+  WeightTrendChart,
+  BodyMeasurementsCard,
+  MonthlySummaryCard,
+  StreakCounter,
+  AchievementBadges,
+  WeightTrendSkeleton,
+  BodyMeasurementsSkeleton,
+  MonthlySummarySkeleton,
+  StreakCounterSkeleton,
+  AchievementBadgesSkeleton,
+} from '@/components/progress'
 
 export default function ProgressPage() {
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
-
-  const handleProgressAdded = () => {
-    setRefreshTrigger(prev => prev + 1)
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
+
+      {/* ── Page heading ── */}
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Progress</h1>
-        <p className="text-gray-500">Track your fitness journey with detailed progress charts and log your metrics.</p>
+        <h1 className="text-2xl font-bold text-brand-slate">
+          Fitness Progress &amp; Achievements
+        </h1>
+        <p className="mt-1 text-sm text-brand-slate/55">
+          All stats auto-updated from your workouts, diet logs, and goals — no manual entry needed.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ProgressForm onProgressAdded={handleProgressAdded} />
-        <ProgressChart refreshTrigger={refreshTrigger} />
+      {/* ── Weight Trend ── */}
+      <Suspense fallback={<WeightTrendSkeleton />}>
+        <WeightTrendChart />
+      </Suspense>
+
+      {/* ── Body Measurements ── */}
+      <Suspense fallback={<BodyMeasurementsSkeleton />}>
+        <BodyMeasurementsCard />
+      </Suspense>
+
+      {/* ── Monthly Summary ── */}
+      <Suspense fallback={<MonthlySummarySkeleton />}>
+        <MonthlySummaryCard />
+      </Suspense>
+
+      {/* ── Streak + Achievements side by side on large screens ── */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_2fr]">
+        <Suspense fallback={<StreakCounterSkeleton />}>
+          <StreakCounter />
+        </Suspense>
+
+        <Suspense fallback={<AchievementBadgesSkeleton />}>
+          <AchievementBadges />
+        </Suspense>
       </div>
+
     </div>
   )
 }
-
-

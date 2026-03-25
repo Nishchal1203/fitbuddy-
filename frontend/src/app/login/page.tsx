@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import logo from '../../assets/logo1.svg'
+import logo from '../../assets/Logo_full.svg'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -57,9 +57,9 @@ export default function LoginPage() {
     <div className="flex min-h-[100dvh] items-center justify-center bg-brand-bg px-4 py-8">
       <div className="w-full max-w-[23rem] rounded-2xl border border-brand-pale bg-white px-6 py-7 shadow-[0_20px_50px_-22px_#9567B9]">
         <div className="mb-5 flex items-center gap-3">
-          <Image src={logo} alt="Fit Buddy logo" width={36} height={36} className="rounded-xl" />
+          <Image src={logo} alt="Fit Buddy logo" width={40} height={40} className="rounded-xl" />
           <div>
-            <p className="text-xs font-semibold tracking-wide text-brand-deep">FITBUDDY</p>
+            {/* <p className="text-xs font-semibold tracking-wide text-brand-deep">FITBUDDY</p> */}
             <h1 className="text-xl font-bold text-brand-slate">Welcome Back</h1>
           </div>
         </div>

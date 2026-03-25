@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import { ToastProvider } from '@/components/ui'
+import EnterpriseTopNav from '@/components/chat/EnterpriseTopNav'
 
 export default function DashboardLayout({
   children,
@@ -36,7 +37,10 @@ export default function DashboardLayout({
             isCollapsed={isCollapsed}
             onToggleCollapse={() => setIsCollapsed((prev) => !prev)}
           />
-          <main className="min-h-screen p-6">{children}</main>
+          <main className="min-h-screen">
+            <EnterpriseTopNav />
+            <div className="p-6">{children}</div>
+          </main>
         </div>
       </div>
     </ToastProvider>

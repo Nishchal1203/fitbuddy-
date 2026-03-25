@@ -1,17 +1,24 @@
 'use client'
 
-import React from 'react'
-import GoalTracker from '@/components/GoalTracker'
+import React, { useState } from 'react'
+import GoalsDashboard from '@/components/goals/GoalsDashboard'
+import FloatingAiButton from '@/components/goals/FloatingAiButton'
+import AIGoalAssistant from '@/components/diet-plan/AI_chat'
 
 export default function GoalsPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Goals</h1>
-        <p className="text-gray-500">Set and track your fitness goals to stay motivated.</p>
-      </div>
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false)
 
-      <GoalTracker />
+  return (
+    <div className="relative space-y-6 pb-24">
+      <GoalsDashboard />
+      <FloatingAiButton onClick={() => setIsAIAssistantOpen(true)} />
+
+      <AIGoalAssistant
+        isOpen={isAIAssistantOpen}
+        mode="goal"
+        onClose={() => setIsAIAssistantOpen(false)}
+        onApply={() => setIsAIAssistantOpen(false)}
+      />
     </div>
   )
 }
