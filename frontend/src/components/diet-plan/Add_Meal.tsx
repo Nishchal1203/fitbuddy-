@@ -28,6 +28,13 @@ import {
 ───────────────────────────────────────────── */
 export type AddMealItem = MealItem;
 
+export type AddMealLogItem = AddMealItem & {
+  grams: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+};
+
 type DraftMealEntry = {
   item: FoodCatalogItem;
   grams: number;
@@ -37,7 +44,11 @@ type AddMealModalProps = {
   isOpen: boolean;
   sections: string[];
   onClose: () => void;
-  onAddMeals: (section: string, meals: AddMealItem[]) => void;
+  onAddMeals: (
+    section: string,
+    meals: AddMealLogItem[],
+    loggedAt: string,
+  ) => void;
 };
 
 /* ─────────────────────────────────────────────
@@ -65,8 +76,13 @@ export default function Add_Meal({
   onClose,
   onAddMeals,
 }: AddMealModalProps) {
+  const nowLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
+
   const [search, setSearch] = useState("");
   const [selectedSection, setSelectedSection] = useState("Breakfast");
+  const [loggedAt, setLoggedAt] = useState(nowLocal);
   const [draftEntries, setDraftEntries] = useState<DraftMealEntry[]>([]);
   const [dietFilter, setDietFilter] = useState<DietType>("all");
   const [categoryFilter, setCategoryFilter] = useState<FoodCategory>("All");
@@ -147,13 +163,14 @@ export default function Add_Meal({
     setCategoryFilter("All");
     setShowFilters(false);
     setSelectedSection(sectionOptions[0] || "Breakfast");
+    setLoggedAt(nowLocal);
     onClose();
   }
 
   function handleAddMeal() {
     if (draftEntries.length === 0) return;
 
-    const meals: AddMealItem[] = draftEntries.map((entry) => {
+    const meals: AddMealLogItem[] = draftEntries.map((entry) => {
       const r = entry.grams / 100;
       const protein = entry.item.proteinPer100g * r;
       const carbs = entry.item.carbsPer100g * r;
@@ -163,6 +180,10 @@ export default function Add_Meal({
       return {
         name: `${entry.item.name} (${entry.grams}g)`,
         kcal: Math.round(kcal),
+        grams: entry.grams,
+        protein_g: Number(protein.toFixed(1)),
+        carbs_g: Number(carbs.toFixed(1)),
+        fat_g: Number(fat.toFixed(1)),
         macros: [
           {
             label: "Protein",
@@ -183,7 +204,8 @@ export default function Add_Meal({
       };
     });
 
-    onAddMeals(selectedSection, meals);
+    const safeLoggedAt = new Date(loggedAt || nowLocal).toISOString();
+    onAddMeals(selectedSection, meals, safeLoggedAt);
     resetModal();
   }
 
@@ -215,6 +237,18 @@ export default function Add_Meal({
               {section}
             </button>
           ))}
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-brand-slate/55">
+            Eaten At
+          </label>
+          <input
+            type="datetime-local"
+            value={loggedAt}
+            onChange={(e) => setLoggedAt(e.target.value)}
+            className="w-full rounded-xl border border-brand-mauve/60 bg-white px-3 py-2.5 text-sm text-brand-slate focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/15"
+          />
         </div>
 
         {/* ── Search bar + Filter toggle ── */}
