@@ -21,7 +21,7 @@ import {
   type FoodCatalogItem,
   type MealItem,
   type FoodCategory,
-} from "@/lib/constants";
+} from "@/Utils/constants";
 
 /* ─────────────────────────────────────────────
    TYPES
