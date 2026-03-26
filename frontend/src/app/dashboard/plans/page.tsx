@@ -10,7 +10,7 @@ import {
   type MacroData,
   type MealItem,
   type MealSection,
-} from "@/lib/constants";
+} from "@/Utils/constants";
 import WaterGlass from "@/assets/water glass.png";
 import AiIcon from "@/assets/AI_icon.svg";
 import { Button } from "@/components/ui/Button";
