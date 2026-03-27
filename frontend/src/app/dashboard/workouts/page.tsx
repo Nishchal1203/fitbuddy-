@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { Plus } from "lucide-react";
 import { useToast } from "@/components/ui";
+import workoutPhoto from "@/assets/workout_photo.png";
 import {
   CustomPlanBuilder,
   PlanDetailsModal,
@@ -166,8 +168,12 @@ function RecommendedPlanCard({
 }) {
   return (
     <div className="flex flex-col rounded-2xl bg-white overflow-hidden shadow-[0_4px_20px_-4px_#9567B920]">
-      <div className="flex h-44 items-center justify-center bg-brand-bg">
-        <span className="text-4xl text-brand-mauve ">🏋️</span>
+      <div className="relative h-44 w-full bg-brand-bg">
+        <Image
+          src={workoutPhoto}
+          alt="Workout"
+          className="h-full w-full object-cover"
+        />
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-4">
