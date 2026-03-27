@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import { TrendingDown, TrendingUp, Minus } from "lucide-react";
-import { API_BASE_URL, buildAuthHeaders } from "@/lib/api";
+import { API_BASE_URL, buildAuthHeaders } from "@/Utils/api";
 
 /* ─────────────────────────────────────────────
    TYPES

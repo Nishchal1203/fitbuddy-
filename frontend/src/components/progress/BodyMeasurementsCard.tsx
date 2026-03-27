@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { TrendingDown, TrendingUp, Minus, Ruler } from "lucide-react";
-import { API_BASE_URL, buildAuthHeaders } from "@/lib/api";
+import { API_BASE_URL, buildAuthHeaders } from "@/Utils/api";
 
 /* ─────────────────────────────────────────────
    TYPES

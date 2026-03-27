@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { Flame, Calendar, Award, TrendingUp } from "lucide-react";
-import { API_BASE_URL, buildAuthHeaders } from "@/lib/api";
+import { API_BASE_URL, buildAuthHeaders } from "@/Utils/api";
 import flame from "@/assets/Fire.svg";
 
 /* ─────────────────────────────────────────────

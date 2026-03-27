@@ -15,7 +15,7 @@ import {
   Award,
   Medal,
 } from "lucide-react";
-import { API_BASE_URL, buildAuthHeaders } from "@/lib/api";
+import { API_BASE_URL, buildAuthHeaders } from "@/Utils/api";
 import trophy from "@/assets/trophy.svg";
 
 /* ─────────────────────────────────────────────

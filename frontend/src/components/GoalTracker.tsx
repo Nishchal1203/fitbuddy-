@@ -14,7 +14,7 @@ import {
   Textarea,
   useToast,
 } from "@/components/ui";
-import { API_BASE_URL, buildAuthHeaders, readErrorMessage } from "@/lib/api";
+import { API_BASE_URL, buildAuthHeaders, readErrorMessage } from "@/Utils/api";
 
 type Goal = {
   id: number;

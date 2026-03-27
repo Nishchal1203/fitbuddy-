@@ -35,6 +35,8 @@ export type AddMealLogItem = AddMealItem & {
   fat_g: number;
 };
 
+export type AddMealLogTarget = "actual" | "planned";
+
 type DraftMealEntry = {
   item: FoodCatalogItem;
   grams: number;
@@ -48,6 +50,7 @@ type AddMealModalProps = {
     section: string,
     meals: AddMealLogItem[],
     loggedAt: string,
+    target: AddMealLogTarget,
   ) => void;
 };
 
@@ -83,6 +86,7 @@ export default function Add_Meal({
   const [search, setSearch] = useState("");
   const [selectedSection, setSelectedSection] = useState("Breakfast");
   const [loggedAt, setLoggedAt] = useState(nowLocal);
+  const [logTarget, setLogTarget] = useState<AddMealLogTarget | null>(null);
   const [draftEntries, setDraftEntries] = useState<DraftMealEntry[]>([]);
   const [dietFilter, setDietFilter] = useState<DietType>("all");
   const [categoryFilter, setCategoryFilter] = useState<FoodCategory>("All");
@@ -163,12 +167,13 @@ export default function Add_Meal({
     setCategoryFilter("All");
     setShowFilters(false);
     setSelectedSection(sectionOptions[0] || "Breakfast");
+    setLogTarget(null);
     setLoggedAt(nowLocal);
     onClose();
   }
 
   function handleAddMeal() {
-    if (draftEntries.length === 0) return;
+    if (draftEntries.length === 0 || !logTarget) return;
 
     const meals: AddMealLogItem[] = draftEntries.map((entry) => {
       const r = entry.grams / 100;
@@ -205,7 +210,7 @@ export default function Add_Meal({
     });
 
     const safeLoggedAt = new Date(loggedAt || nowLocal).toISOString();
-    onAddMeals(selectedSection, meals, safeLoggedAt);
+    onAddMeals(selectedSection, meals, safeLoggedAt, logTarget);
     resetModal();
   }
 
@@ -237,6 +242,36 @@ export default function Add_Meal({
               {section}
             </button>
           ))}
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-brand-slate/55">
+            Logging Type
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setLogTarget("actual")}
+              className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                logTarget === "actual"
+                  ? "border-brand-purple bg-brand-purple text-white"
+                  : "border-brand-pale bg-white text-brand-slate hover:bg-brand-bg"
+              }`}
+            >
+              Actual Intake
+            </button>
+            <button
+              type="button"
+              onClick={() => setLogTarget("planned")}
+              className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                logTarget === "planned"
+                  ? "border-brand-purple bg-brand-purple text-white"
+                  : "border-brand-pale bg-white text-brand-slate hover:bg-brand-bg"
+              }`}
+            >
+              Planned Meal
+            </button>
+          </div>
         </div>
 
         <div>
@@ -544,11 +579,15 @@ export default function Add_Meal({
           variant="gold"
           size="lg"
           onClick={handleAddMeal}
-          disabled={draftEntries.length === 0}
-          className="w-full rounded-2xl text-base font-bold text-white disabled:opacity-50"
+          disabled={draftEntries.length === 0 || !logTarget}
+          className="w-full rounded-2xl text-base font-bold text-black disabled:opacity-50"
         >
           <UtensilsCrossed size={18} />
-          Add to {selectedSection}
+          {logTarget === "planned"
+            ? `Add to Planned ${selectedSection}`
+            : logTarget === "actual"
+              ? `Log Actual ${selectedSection}`
+              : "Select Logging Type"}
         </Button>
       </div>
     </Modal>

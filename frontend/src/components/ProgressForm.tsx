@@ -12,7 +12,7 @@ import {
   Input,
   useToast,
 } from "@/components/ui";
-import { API_BASE_URL, buildAuthHeaders, readErrorMessage } from "@/lib/api";
+import { API_BASE_URL, buildAuthHeaders, readErrorMessage } from "@/Utils/api";
 
 export default function ProgressForm({ onProgressAdded }) {
   const { showToast } = useToast();

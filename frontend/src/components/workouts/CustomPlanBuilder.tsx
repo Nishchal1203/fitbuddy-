@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Sparkles } from "lucide-react";
 import Image from "next/image";
 import { Button, Input, Modal, Select, Textarea } from "@/components/ui";
-import { API_BASE_URL, buildAuthHeaders, getAuthToken } from "@/lib/api";
+import { API_BASE_URL, buildAuthHeaders, getAuthToken } from "@/Utils/api";
 import { CustomPlanDraftInput, PlanExercise } from "./types";
 import aiIcon from "../../assets/AI_icon.svg";
 
@@ -223,6 +223,16 @@ export default function CustomPlanBuilder({
     setLoading(true);
 
     try {
+      const aiPrompt = formData.ai_prompt.trim();
+      const normalizedTitle =
+        builderMode === "ai"
+          ? formData.title.trim() || "AI Workout Plan"
+          : formData.title.trim();
+      const normalizedDescription =
+        builderMode === "ai"
+          ? formData.description.trim() || `AI-generated workout from prompt: ${aiPrompt || "custom fitness goal"}`
+          : formData.description.trim();
+
       const selectedExercises: PlanExercise[] = exerciseRows
         .filter((row) => row.exercise_id !== null)
         .map((row) => {
@@ -241,14 +251,14 @@ export default function CustomPlanBuilder({
         });
 
       await onCreateDraft({
-        title: formData.title.trim(),
-        description: formData.description.trim(),
+        title: normalizedTitle,
+        description: normalizedDescription,
         level: formData.level,
         duration_days: Number(formData.duration_days) || 30,
         focus: formData.focus.trim(),
         exercises: selectedExercises,
         generation_mode: builderMode,
-        ai_prompt: formData.ai_prompt.trim(),
+        ai_prompt: aiPrompt,
       });
 
       resetAndClose();
@@ -308,20 +318,24 @@ export default function CustomPlanBuilder({
         <Input
           name="title"
           label="Plan Title"
-          placeholder="e.g. Summer Body Shred"
+          placeholder={builderMode === "ai" ? "Optional: leave blank to auto-generate" : "e.g. Summer Body Shred"}
           value={formData.title}
           onChange={handleChange}
-          required
+          required={builderMode !== "ai"}
         />
 
         <Textarea
           name="description"
           label="Description"
-          placeholder="Define your target outcomes and constraints"
+          placeholder={
+            builderMode === "ai"
+              ? "Optional: AI will create a summary from your prompt"
+              : "Define your target outcomes and constraints"
+          }
           rows={4}
           value={formData.description}
           onChange={handleChange}
-          required
+          required={builderMode !== "ai"}
         />
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -377,8 +391,7 @@ export default function CustomPlanBuilder({
               required={builderMode === "ai"}
             />
             <p className="text-xs text-gray-500">
-              This is frontend-only for now. Backend AI generation will be
-              connected later.
+              AI-generated plans are created on backend and added to your active plans.
             </p>
           </div>
         ) : (
@@ -471,11 +484,11 @@ export default function CustomPlanBuilder({
         <div className="rounded-lg border border-brand-gold/40 bg-brand-gold/10 p-3 text-sm text-yellow-800">
           <p className="inline-flex items-center gap-2 font-medium">
             <Sparkles size={14} />{" "}
-            {builderMode === "ai" ? "AI Plan Draft" : "Custom Plan Builder"}
+            {builderMode === "ai" ? "AI Workout Plan" : "Custom Plan Builder"}
           </p>
           <p className="mt-1 text-xs">
             {builderMode === "ai"
-              ? "AI prompt plans are created as frontend drafts for now, then we can connect backend generation."
+              ? "AI prompt plans are generated via backend and can be followed immediately."
               : "Your selected exercises with sets/reps will be saved and added to active plans immediately."}
           </p>
         </div>

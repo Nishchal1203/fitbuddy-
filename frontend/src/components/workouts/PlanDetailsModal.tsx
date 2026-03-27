@@ -97,7 +97,7 @@ export default function PlanDetailsModal({
                 }
               }}
             >
-              {isSubscribed ? "Already in My Active Plans" : "Follow This Plan"}
+              {isSubscribed ? "Already in My Active Plans" : "Add This Plan"}
             </Button>
           </div>
         </div>

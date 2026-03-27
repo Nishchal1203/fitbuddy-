@@ -8,9 +8,17 @@ from app.db.session import Base
 
 if TYPE_CHECKING:
 	from app.models.exercise import Exercise
-	from app.models.workout import WorkoutSession, Workout
+	from app.models.workout import WorkoutSession, Workout, WorkoutPlanFollow
 	from app.models.goal import Goal
 	from app.models.progress import Progress
+	from app.models.nutrition import (
+		FoodItem,
+		MealLog,
+		HydrationLog,
+		NutritionGoal,
+		AICoachInsight,
+		AIDietPlan,
+	)
 
 
 class User(Base):
@@ -25,5 +33,12 @@ class User(Base):
 	exercises: Mapped[list[Exercise]] = relationship(back_populates="owner", cascade="all, delete-orphan")
 	workouts: Mapped[list[WorkoutSession]] = relationship(back_populates="owner" , cascade="all, delete-orphan")
 	workout_plans: Mapped[list[Workout]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+	followed_workout_plans: Mapped[list[WorkoutPlanFollow]] = relationship(back_populates="user", cascade="all, delete-orphan")
 	goals: Mapped[list[Goal]] = relationship(back_populates="owner", cascade="all, delete-orphan")
 	progress_entries: Mapped[list[Progress]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+	food_items: Mapped[list[FoodItem]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+	meal_logs: Mapped[list[MealLog]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+	hydration_logs: Mapped[list[HydrationLog]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+	nutrition_goal: Mapped[NutritionGoal | None] = relationship(back_populates="owner", uselist=False, cascade="all, delete-orphan")
+	coach_insights: Mapped[list[AICoachInsight]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+	ai_diet_plans: Mapped[list[AIDietPlan]] = relationship(back_populates="owner", cascade="all, delete-orphan")

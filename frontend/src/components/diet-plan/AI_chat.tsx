@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { API_BASE_URL, buildAuthHeaders } from "@/Utils/api";
 
 /* ─────────────────────────────────────────────
    TYPES
@@ -37,7 +38,12 @@ export type AIGoalAssistantProps = {
   };
 };
 
-type AIResponse = (typeof MOCK_RESPONSES)[AIMode];
+type AIResponse = {
+  summary: string;
+  suggestions: string[];
+  action_label: string;
+  action_data: AIActionData;
+};
 
 /* ─────────────────────────────────────────────
    MODE CONFIG
@@ -121,6 +127,21 @@ const MOCK_RESPONSES = {
       restrictions: [],
     },
   },
+};
+
+type NutritionAIGenerateResponse = {
+  plan_id: number;
+  summary: string;
+  suggestions: string[];
+  recommended_plan: Record<string, unknown>;
+  created_at: string;
+};
+
+type GoalAIGenerateResponse = {
+  summary: string;
+  suggestions: string[];
+  recommended_goal: Record<string, unknown>;
+  source: string;
 };
 
 /* ─────────────────────────────────────────────
@@ -225,6 +246,7 @@ export default function AIGoalAssistant({
 
   const [prompt, setPrompt] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [response, setResponse] = useState<AIResponse | null>(null);
@@ -244,6 +266,7 @@ export default function AIGoalAssistant({
       return;
     }
     setImagePreview(URL.createObjectURL(file));
+    setSelectedImageFile(file);
     setError("");
   }
 
@@ -261,7 +284,21 @@ export default function AIGoalAssistant({
 
   function removeImage() {
     setImagePreview(null);
+    setSelectedImageFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function fileToBase64(file: File): Promise<string> {
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const raw = String(reader.result || "");
+        const base64 = raw.includes(",") ? raw.split(",")[1] : raw;
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error("image-read-failed"));
+      reader.readAsDataURL(file);
+    });
   }
 
   /* ── textarea auto-grow ── */
@@ -280,7 +317,7 @@ export default function AIGoalAssistant({
     setTimeout(() => textareaRef.current?.focus(), 50);
   }
 
-  /* ── generate (mock — swap with real API call later) ── */
+  /* ── generate ── */
   async function handleGenerate() {
     if (!prompt.trim()) {
       setError("Please describe your vision first.");
@@ -290,11 +327,65 @@ export default function AIGoalAssistant({
     setError("");
     setResponse(null);
 
-    // simulate network latency
-    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      if (mode === "diet") {
+        const imageBase64 = selectedImageFile
+          ? await fileToBase64(selectedImageFile)
+          : null;
 
-    setResponse(MOCK_RESPONSES[mode]);
-    setLoading(false);
+        const response = await fetch(`${API_BASE_URL}/api/nutrition/ai/generate-plan`, {
+          method: "POST",
+          headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({
+            prompt,
+            image_base64: imageBase64,
+            user_context: userContext || {},
+          }),
+        });
+
+        if (response.ok) {
+          const data = (await response.json()) as NutritionAIGenerateResponse;
+          setResponse({
+            summary: data.summary,
+            suggestions: Array.isArray(data.suggestions)
+              ? data.suggestions
+              : [],
+            action_label: "Apply Meal Plan",
+            action_data: data.recommended_plan || {},
+          });
+        } else {
+          setResponse(MOCK_RESPONSES[mode]);
+          setError("AI service is unavailable right now, showing fallback recommendation.");
+        }
+      } else {
+        const response = await fetch(`${API_BASE_URL}/api/goals/ai-draft`, {
+          method: "POST",
+          headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({
+            prompt,
+            user_context: userContext || {},
+          }),
+        });
+
+        if (response.ok) {
+          const data = (await response.json()) as GoalAIGenerateResponse;
+          setResponse({
+            summary: data.summary,
+            suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
+            action_label: "Apply Goal Plan",
+            action_data: data.recommended_goal || {},
+          });
+        } else {
+          setResponse(MOCK_RESPONSES[mode]);
+          setError("AI service is unavailable right now, showing fallback recommendation.");
+        }
+      }
+    } catch {
+      setResponse(MOCK_RESPONSES[mode]);
+      setError("AI request failed, fallback recommendation shown.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   /* ── reset ── */
@@ -307,6 +398,7 @@ export default function AIGoalAssistant({
   function handleClose() {
     setPrompt("");
     setImagePreview(null);
+    setSelectedImageFile(null);
     setLoading(false);
     setError("");
     setResponse(null);

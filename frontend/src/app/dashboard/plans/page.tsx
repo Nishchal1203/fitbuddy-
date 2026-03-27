@@ -1,12 +1,10 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { MoreHorizontal, Plus, Sparkles, Trash2 } from "lucide-react";
 import {
-  CALORIE_DATA,
   INITIAL_MEALS,
-  MACRO_DATA,
   type MacroData,
   type MealItem,
   type MealSection,
@@ -16,10 +14,55 @@ import AiIcon from "@/assets/AI_icon.svg";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import Add_Meal, {
+  AddMealLogTarget,
   AddMealLogItem,
 } from "@/components/diet-plan/Add_Meal";
 import AIGoalAssistant from "@/components/diet-plan/AI_chat";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+type NutritionGoalResponse = {
+  id: number;
+  daily_calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  hydration_ml: number;
+};
+
+type NutritionSummaryResponse = {
+  date: string;
+  consumed: {
+    calories: number;
+    protein_g: number;
+    carbs_g: number;
+    fat_g: number;
+    meals_count: number;
+  };
+};
+
+type HydrationSummaryResponse = {
+  date: string;
+  consumed_ml: number;
+  goal_ml: number;
+  cup_size_ml: number;
+  cups_count: number;
+  adherence_percentage: number;
+};
+
+type MealApiItem = {
+  id: number;
+  date: string;
+  section: string;
+  logged_at: string;
+  food_name: string;
+  grams: number;
+  kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+};
 
 type MacroTotals = {
   protein: number;
@@ -29,6 +72,7 @@ type MacroTotals = {
 
 type LoggedMeal = {
   id: string;
+  remoteId?: number;
   section: string;
   loggedAt: string;
   item: AddMealLogItem;
@@ -38,6 +82,17 @@ type CoachInsight = {
   score: number;
   verdict: string;
   actions: string[];
+};
+
+type PlannedMealApplyPayload = {
+  calorie_target?: number;
+  protein_g?: number;
+  carbs_g?: number;
+  fat_g?: number;
+  meal_count?: number;
+  diet_type?: string;
+  restrictions?: string[];
+  meal_breakdown?: Record<string, Array<Record<string, unknown>>>;
 };
 
 const DEFAULT_SECTIONS = ["Breakfast", "Lunch", "Dinner", "Snacks"];
@@ -59,6 +114,53 @@ function formatTime(iso: string) {
 
 function clamp(n: number, min: number, max: number) {
   return Math.min(Math.max(n, min), max);
+}
+
+function getAccessToken() {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("access_token");
+}
+
+function buildAuthHeaders(extra?: Record<string, string>) {
+  const token = getAccessToken();
+  return {
+    ...(extra || {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
+function mapApiMealToLoggedMeal(row: MealApiItem): LoggedMeal {
+  return {
+    id: String(row.id),
+    remoteId: row.id,
+    section: row.section,
+    loggedAt: row.logged_at,
+    item: {
+      name: row.food_name,
+      kcal: row.kcal,
+      grams: row.grams,
+      protein_g: row.protein_g,
+      carbs_g: row.carbs_g,
+      fat_g: row.fat_g,
+      macros: [
+        {
+          label: "Protein",
+          value: `${row.protein_g.toFixed(1)}g`,
+          color: "bg-brand-purple text-white",
+        },
+        {
+          label: "Carbs",
+          value: `${row.carbs_g.toFixed(1)}g`,
+          color: "bg-brand-gold text-white",
+        },
+        {
+          label: "Fat",
+          value: `${row.fat_g.toFixed(1)}g`,
+          color: "bg-brand-mauve text-white",
+        },
+      ],
+    },
+  };
 }
 
 /* ─────────────────────────────────────────────
@@ -264,9 +366,15 @@ export default function DietPlanPage() {
   const todayKey = getDateKey(new Date());
 
   const [selectedDate, setSelectedDate] = useState(todayKey);
-  const [plannedSections] = useState<MealSection[]>(INITIAL_MEALS);
+  const [plannedSectionsByDate, setPlannedSectionsByDate] = useState<Record<string, MealSection[]>>({
+    [todayKey]: INITIAL_MEALS.map((section) => ({ ...section, items: [...section.items] })),
+  });
   const [logsByDate, setLogsByDate] = useState<Record<string, LoggedMeal[]>>({});
   const [waterByDateMl, setWaterByDateMl] = useState<Record<string, number>>({});
+  const [isSyncingDate, setIsSyncingDate] = useState(false);
+  const [goalCalories, setGoalCalories] = useState(2200);
+  const [goalMacros, setGoalMacros] = useState({ protein: 180, carbs: 300, fat: 70 });
+  const [goalHydrationMl, setGoalHydrationMl] = useState(2500);
   const [cupSizeMl, setCupSizeMl] = useState(250);
   const [weightKg, setWeightKg] = useState(70);
   const [workoutMinutes, setWorkoutMinutes] = useState(45);
@@ -275,6 +383,13 @@ export default function DietPlanPage() {
   const [coachLoading, setCoachLoading] = useState(false);
   const [coachInsight, setCoachInsight] = useState<CoachInsight | null>(null);
 
+  const plannedSections = useMemo(
+    () =>
+      plannedSectionsByDate[selectedDate] ||
+      INITIAL_MEALS.map((section) => ({ ...section, items: [...section.items] })),
+    [plannedSectionsByDate, selectedDate],
+  );
+
   const selectedLogs = useMemo(
     () => [...(logsByDate[selectedDate] || [])].sort((a, b) => a.loggedAt.localeCompare(b.loggedAt)),
     [logsByDate, selectedDate],
@@ -282,12 +397,91 @@ export default function DietPlanPage() {
 
   const macroTargets = useMemo(
     () => ({
-      protein: MACRO_DATA.find((m) => m.label === "Protein")?.target || 180,
-      carbs: MACRO_DATA.find((m) => m.label === "Carbs")?.target || 300,
-      fat: MACRO_DATA.find((m) => m.label === "Fat")?.target || 70,
+      protein: goalMacros.protein,
+      carbs: goalMacros.carbs,
+      fat: goalMacros.fat,
     }),
-    [],
+    [goalMacros],
   );
+
+  useEffect(() => {
+    async function loadNutritionGoals() {
+      const token = getAccessToken();
+      if (!token) return;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/nutrition/goals`, {
+          headers: buildAuthHeaders(),
+        });
+        if (!response.ok) return;
+
+        const data = (await response.json()) as NutritionGoalResponse;
+        setGoalCalories(data.daily_calories);
+        setGoalMacros({
+          protein: Number(data.protein_g),
+          carbs: Number(data.carbs_g),
+          fat: Number(data.fat_g),
+        });
+        setGoalHydrationMl(data.hydration_ml);
+      } catch {
+        // Keep defaults if backend goals are unavailable.
+      }
+    }
+
+    loadNutritionGoals();
+  }, []);
+
+  useEffect(() => {
+    async function syncDateData() {
+      const token = getAccessToken();
+      if (!token) return;
+
+      setIsSyncingDate(true);
+      try {
+        const [mealsResponse, hydrationResponse, summaryResponse] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/nutrition/meals?date=${selectedDate}`, {
+            headers: buildAuthHeaders(),
+          }),
+          fetch(
+            `${API_BASE_URL}/api/nutrition/hydration?date=${selectedDate}&cup_size_ml=${cupSizeMl}&goal_ml=${goalHydrationMl}`,
+            {
+              headers: buildAuthHeaders(),
+            },
+          ),
+          fetch(`${API_BASE_URL}/api/nutrition/summary?date=${selectedDate}`, {
+            headers: buildAuthHeaders(),
+          }),
+        ]);
+
+        if (mealsResponse.ok) {
+          const mealsData = (await mealsResponse.json()) as { meals: MealApiItem[] };
+          setLogsByDate((prev) => ({
+            ...prev,
+            [selectedDate]: mealsData.meals.map(mapApiMealToLoggedMeal),
+          }));
+        }
+
+        if (hydrationResponse.ok) {
+          const hydration = (await hydrationResponse.json()) as HydrationSummaryResponse;
+          setWaterByDateMl((prev) => ({
+            ...prev,
+            [selectedDate]: hydration.consumed_ml,
+          }));
+        }
+
+        if (summaryResponse.ok) {
+          const summary = (await summaryResponse.json()) as NutritionSummaryResponse;
+          setGoalCalories((prev) => (prev > 0 ? prev : Math.round(summary.consumed.calories)));
+        }
+      } catch {
+        // Keep current local values when sync fails.
+      } finally {
+        setIsSyncingDate(false);
+      }
+    }
+
+    syncDateData();
+  }, [selectedDate, cupSizeMl, goalHydrationMl]);
 
   const totals = useMemo(() => {
     return selectedLogs.reduce(
@@ -306,7 +500,7 @@ export default function DietPlanPage() {
   }, [selectedLogs]);
 
   const consumed = Math.round(totals.kcal);
-  const total = CALORIE_DATA.total;
+  const total = goalCalories;
   const remaining = total - consumed;
 
   const macroRows: MacroData[] = useMemo(
@@ -350,103 +544,357 @@ export default function DietPlanPage() {
     ? clamp(Math.round((consumed / plannedKcal) * 100), 0, 200)
     : 0;
 
-  const hydrationGoalMl = Math.round(weightKg * 35 + workoutMinutes * 12);
+  const formulaHydrationMl = Math.round(weightKg * 35 + workoutMinutes * 12);
+  const hydrationGoalMl = Math.max(goalHydrationMl, formulaHydrationMl);
   const hydratedMl = waterByDateMl[selectedDate] || 0;
   const totalCups = Math.max(1, Math.ceil(hydrationGoalMl / cupSizeMl));
   const waterCups = clamp(Math.round(hydratedMl / cupSizeMl), 0, totalCups);
 
-  function toggleCup(i: number) {
+  async function toggleCup(i: number) {
+    if (i < waterCups) return;
+
     const nextCups = i < waterCups ? i : i + 1;
+    const nextMl = nextCups * cupSizeMl;
+    const deltaMl = nextMl - hydratedMl;
+
+    if (deltaMl <= 0) return;
+
     setWaterByDateMl((prev) => ({
       ...prev,
-      [selectedDate]: nextCups * cupSizeMl,
+      [selectedDate]: nextMl,
     }));
+
+    const token = getAccessToken();
+    if (!token) return;
+
+    try {
+      await fetch(`${API_BASE_URL}/api/nutrition/hydration?cup_size_ml=${cupSizeMl}`, {
+        method: "POST",
+        headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          date: selectedDate,
+          amount_ml: deltaMl,
+          logged_at: new Date().toISOString(),
+        }),
+      });
+    } catch {
+      // Preserve optimistic hydration value on request failure.
+    }
   }
 
-  function handleAddMeals(
+  async function handleAddMeals(
     sectionTitle: string,
     meals: AddMealLogItem[],
     loggedAt: string,
+    target: AddMealLogTarget,
   ) {
     const dateKey = getDateKey(loggedAt);
-    setLogsByDate((prev) => ({
-      ...prev,
-      [dateKey]: [
-        ...(prev[dateKey] || []),
-        ...meals.map((item, idx) => ({
-          id: `${Date.now()}-${idx}-${Math.random().toString(16).slice(2, 7)}`,
+
+    if (target === "planned") {
+      setPlannedSectionsByDate((prev) => {
+        const existing =
+          prev[dateKey] ||
+          INITIAL_MEALS.map((section) => ({ ...section, items: [...section.items] }));
+
+        return {
+          ...prev,
+          [dateKey]: existing.map((section) =>
+            section.title === sectionTitle
+              ? {
+                  ...section,
+                  items: [
+                    ...section.items,
+                    ...meals.map((meal) => ({
+                      name: meal.name,
+                      kcal: meal.kcal,
+                      macros: meal.macros,
+                    })),
+                  ],
+                }
+              : section,
+          ),
+        };
+      });
+      return;
+    }
+
+    const token = getAccessToken();
+    if (!token) {
+      setLogsByDate((prev) => ({
+        ...prev,
+        [dateKey]: [
+          ...(prev[dateKey] || []),
+          ...meals.map((item, idx) => ({
+            id: `${Date.now()}-${idx}-${Math.random().toString(16).slice(2, 7)}`,
+            section: sectionTitle,
+            loggedAt,
+            item,
+          })),
+        ],
+      }));
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/nutrition/meals`, {
+        method: "POST",
+        headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          date: dateKey,
           section: sectionTitle,
-          loggedAt,
-          item,
-        })),
-      ],
+          logged_at: loggedAt,
+          meals: meals.map((meal) => ({
+            food_name: meal.name,
+            grams: meal.grams,
+            kcal: meal.kcal,
+            protein_g: meal.protein_g,
+            carbs_g: meal.carbs_g,
+            fat_g: meal.fat_g,
+          })),
+        }),
+      });
+
+      if (!response.ok) throw new Error("meal-create-failed");
+
+      const createdMeals = (await response.json()) as MealApiItem[];
+      setLogsByDate((prev) => ({
+        ...prev,
+        [dateKey]: [
+          ...(prev[dateKey] || []),
+          ...createdMeals.map(mapApiMealToLoggedMeal),
+        ].sort((a, b) => a.loggedAt.localeCompare(b.loggedAt)),
+      }));
+    } catch {
+      // Keep local fallback even if backend save fails.
+      setLogsByDate((prev) => ({
+        ...prev,
+        [dateKey]: [
+          ...(prev[dateKey] || []),
+          ...meals.map((item, idx) => ({
+            id: `${Date.now()}-${idx}-${Math.random().toString(16).slice(2, 7)}`,
+            section: sectionTitle,
+            loggedAt,
+            item,
+          })),
+        ],
+      }));
+    }
+  }
+
+  function applyAIMealPlan(data: Record<string, unknown>) {
+    const payload = data as PlannedMealApplyPayload;
+
+    if (typeof payload.calorie_target === "number") {
+      setGoalCalories(Math.max(800, Math.round(payload.calorie_target)));
+    }
+    if (typeof payload.protein_g === "number" || typeof payload.carbs_g === "number" || typeof payload.fat_g === "number") {
+      setGoalMacros({
+        protein: Math.max(0, Number(payload.protein_g || 0)),
+        carbs: Math.max(0, Number(payload.carbs_g || 0)),
+        fat: Math.max(0, Number(payload.fat_g || 0)),
+      });
+    }
+
+    const calorieTarget = Math.max(1200, Number(payload.calorie_target || goalCalories));
+    const proteinTarget = Math.max(0, Number(payload.protein_g || goalMacros.protein));
+    const carbsTarget = Math.max(0, Number(payload.carbs_g || goalMacros.carbs));
+    const fatTarget = Math.max(0, Number(payload.fat_g || goalMacros.fat));
+
+    const mealBreakdown =
+      payload.meal_breakdown && typeof payload.meal_breakdown === "object"
+        ? payload.meal_breakdown
+        : null;
+
+    if (mealBreakdown) {
+      const aiSections = ["Breakfast", "Lunch", "Dinner"].map((sectionName) => {
+        const rawItems = Array.isArray(mealBreakdown[sectionName.toLowerCase()])
+          ? mealBreakdown[sectionName.toLowerCase()]
+          : Array.isArray(mealBreakdown[sectionName])
+            ? mealBreakdown[sectionName]
+            : [];
+
+        const items = rawItems
+          .map((raw) => {
+            const name = String(raw.name || raw.food || "").trim();
+            if (!name) return null;
+
+            const kcal = Math.max(0, Math.round(Number(raw.kcal || 0)));
+            const protein = Math.max(0, Number(raw.protein_g || raw.protein || 0));
+            const carbs = Math.max(0, Number(raw.carbs_g || raw.carbs || 0));
+            const fat = Math.max(0, Number(raw.fat_g || raw.fat || 0));
+
+            return {
+              name,
+              kcal,
+              macros: [
+                { label: "Protein", value: `${protein.toFixed(1)}g`, color: "bg-brand-purple text-white" },
+                { label: "Carbs", value: `${carbs.toFixed(1)}g`, color: "bg-brand-gold text-white" },
+                { label: "Fat", value: `${fat.toFixed(1)}g`, color: "bg-brand-mauve text-white" },
+              ],
+            };
+          })
+          .filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+        return {
+          title: sectionName,
+          items,
+        } as MealSection;
+      });
+
+      aiSections.push({ title: "Snacks", items: [] });
+
+      setPlannedSectionsByDate((prev) => ({
+        ...prev,
+        [selectedDate]: aiSections,
+      }));
+      return;
+    }
+
+    const sectionTemplate: Array<{ title: string; ratio: number }> = [
+      { title: "Breakfast", ratio: 0.26 },
+      { title: "Lunch", ratio: 0.34 },
+      { title: "Dinner", ratio: 0.30 },
+    ];
+
+    const planned = sectionTemplate.map((section) => {
+      const kcal = Math.round(calorieTarget * section.ratio);
+      const protein = Number((proteinTarget * section.ratio).toFixed(1));
+      const carbs = Number((carbsTarget * section.ratio).toFixed(1));
+      const fat = Number((fatTarget * section.ratio).toFixed(1));
+
+      return {
+        title: section.title,
+        items: [
+          {
+            name: `AI ${section.title} Plan`,
+            kcal,
+            macros: [
+              { label: "Protein", value: `${protein}g`, color: "bg-brand-purple text-white" },
+              { label: "Carbs", value: `${carbs}g`, color: "bg-brand-gold text-white" },
+              { label: "Fat", value: `${fat}g`, color: "bg-brand-mauve text-white" },
+            ],
+          },
+        ],
+      } as MealSection;
+    });
+
+    planned.push({ title: "Snacks", items: [] });
+
+    setPlannedSectionsByDate((prev) => ({
+      ...prev,
+      [selectedDate]: planned,
     }));
   }
 
-  function removeLogEntry(id: string) {
+  async function removeLogEntry(id: string) {
+    const existing = (logsByDate[selectedDate] || []).find((entry) => entry.id === id);
     setLogsByDate((prev) => ({
       ...prev,
       [selectedDate]: (prev[selectedDate] || []).filter((entry) => entry.id !== id),
     }));
+
+    if (!existing?.remoteId) return;
+    const token = getAccessToken();
+    if (!token) return;
+
+    try {
+      await fetch(`${API_BASE_URL}/api/nutrition/meals/${existing.remoteId}`, {
+        method: "DELETE",
+        headers: buildAuthHeaders(),
+      });
+    } catch {
+      // Keep local deletion if backend call fails.
+    }
   }
 
-  function generateCoachInsight() {
+  async function generateCoachInsight() {
     setCoachLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/nutrition/ai/coach-insight`, {
+        method: "POST",
+        headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          date: selectedDate,
+          current_calories: consumed,
+          target_calories: total,
+          macros: {
+            protein_g: Number(totals.macros.protein.toFixed(1)),
+            carbs_g: Number(totals.macros.carbs.toFixed(1)),
+            fat_g: Number(totals.macros.fat.toFixed(1)),
+          },
+          macro_targets: {
+            protein_g: macroTargets.protein,
+            carbs_g: macroTargets.carbs,
+            fat_g: macroTargets.fat,
+          },
+          hydration_ml: hydratedMl,
+          hydration_goal_ml: hydrationGoalMl,
+        }),
+      });
 
-    const proteinGap = Math.max(macroTargets.protein - totals.macros.protein, 0);
-    const waterGap = Math.max(hydrationGoalMl - hydratedMl, 0);
-    const kcalDiffPct = Math.abs(total - consumed) / Math.max(total, 1);
+      if (!response.ok) throw new Error("insight-failed");
 
-    const score = clamp(
-      Math.round(
-        100 -
-          kcalDiffPct * 40 -
-          (proteinGap / Math.max(macroTargets.protein, 1)) * 35 -
-          (waterGap / Math.max(hydrationGoalMl, 1)) * 25,
-      ),
-      35,
-      99,
-    );
+      const data = (await response.json()) as CoachInsight;
+      setCoachInsight({
+        score: data.score,
+        verdict: data.verdict,
+        actions: data.actions,
+      });
+    } catch {
+      const proteinGap = Math.max(macroTargets.protein - totals.macros.protein, 0);
+      const waterGap = Math.max(hydrationGoalMl - hydratedMl, 0);
+      const kcalDiffPct = Math.abs(total - consumed) / Math.max(total, 1);
 
-    const actions: string[] = [];
-
-    if (proteinGap > 20) {
-      actions.push(
-        `Add a high-protein meal today: +${Math.round(proteinGap)}g protein still remaining.`,
+      const score = clamp(
+        Math.round(
+          100 -
+            kcalDiffPct * 40 -
+            (proteinGap / Math.max(macroTargets.protein, 1)) * 35 -
+            (waterGap / Math.max(hydrationGoalMl, 1)) * 25,
+        ),
+        35,
+        99,
       );
-    } else {
-      actions.push("Protein intake is on track. Keep meal timing consistent around training.");
-    }
 
-    if (remaining > 250) {
-      actions.push(`You can still eat ~${remaining} kcal. Prioritize whole-food carbs + lean protein.`);
-    } else if (remaining < -150) {
-      actions.push(`You are over by ${Math.abs(remaining)} kcal. Keep dinner light and avoid calorie-dense snacks.`);
-    } else {
-      actions.push("Calories are close to target. Stay consistent and avoid random late-night extras.");
-    }
+      const actions: string[] = [];
 
-    if (waterGap > 0) {
-      actions.push(`Hydration is low by ${waterGap} ml. Spread it across ${Math.ceil(waterGap / cupSizeMl)} more cups.`);
-    } else {
-      actions.push("Hydration target is complete. Great recovery support for training.");
-    }
+      if (proteinGap > 20) {
+        actions.push(
+          `Add a high-protein meal today: +${Math.round(proteinGap)}g protein still remaining.`,
+        );
+      } else {
+        actions.push("Protein intake is on track. Keep meal timing consistent around training.");
+      }
 
-    const verdict =
-      score >= 85
-        ? "Excellent day for your goal."
-        : score >= 70
-          ? "Solid day with small adjustments needed."
-          : "You need a stronger close to hit today’s nutrition target.";
+      if (remaining > 250) {
+        actions.push(`You can still eat ~${remaining} kcal. Prioritize whole-food carbs + lean protein.`);
+      } else if (remaining < -150) {
+        actions.push(`You are over by ${Math.abs(remaining)} kcal. Keep dinner light and avoid calorie-dense snacks.`);
+      } else {
+        actions.push("Calories are close to target. Stay consistent and avoid random late-night extras.");
+      }
 
-    setTimeout(() => {
+      if (waterGap > 0) {
+        actions.push(`Hydration is low by ${waterGap} ml. Spread it across ${Math.ceil(waterGap / cupSizeMl)} more cups.`);
+      } else {
+        actions.push("Hydration target is complete. Great recovery support for training.");
+      }
+
+      const verdict =
+        score >= 85
+          ? "Excellent day for your goal."
+          : score >= 70
+            ? "Solid day with small adjustments needed."
+            : "You need a stronger close to hit today's nutrition target.";
+
       setCoachInsight({
         score,
         verdict,
         actions,
       });
+    } finally {
       setCoachLoading(false);
-    }, 850);
+    }
   }
 
   const sectionNames = useMemo(() => {
@@ -526,7 +974,7 @@ export default function DietPlanPage() {
           <div className="mb-4 flex items-center justify-between">
             <h3 className="font-bold text-brand-slate">Actual Intake Timeline</h3>
             <span className="rounded-full bg-brand-bg px-2.5 py-1 text-[10px] font-semibold text-brand-purple">
-              {selectedLogs.length} entries
+              {isSyncingDate ? "Syncing..." : `${selectedLogs.length} entries`}
             </span>
           </div>
 
@@ -768,7 +1216,10 @@ export default function DietPlanPage() {
         isOpen={isAIAssistantOpen}
         mode="diet"
         onClose={() => setIsAIAssistantOpen(false)}
-        onApply={() => setIsAIAssistantOpen(false)}
+        onApply={(data) => {
+          applyAIMealPlan(data);
+          setIsAIAssistantOpen(false);
+        }}
       />
     </div>
   );
