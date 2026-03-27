@@ -8,13 +8,53 @@ from app.api.deps import get_db, get_current_user
 from app.models.user import User
 from app.models.goal import Goal
 from app.models.workout import Workout
-from app.schemas.goal import GoalCreate, GoalRead, GoalUpdate
+from app.schemas.goal import AIGoalDraftCreate, AIGoalDraftResponse, GoalCreate, GoalRead, GoalUpdate
 from app.services.rabbitmq_service import rabbitmq_service
 from app.services.redis_service import redis_service
+from app.services.ai.goal_ai_service import goal_ai_service
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/goals", tags=["goals"])
+
+
+@router.post("/ai-draft", response_model=AIGoalDraftResponse)
+def generate_goal_draft(
+	payload: AIGoalDraftCreate,
+	current_user: User = Depends(get_current_user),
+):
+	ai_result = goal_ai_service.generate_goal_draft(
+		prompt=payload.prompt,
+		user_context=payload.user_context,
+	)
+
+	summary = str(ai_result.get("summary") or "Goal draft generated from your vision.")
+	suggestions = ai_result.get("suggestions")
+	if not isinstance(suggestions, list) or len(suggestions) == 0:
+		suggestions = [
+			"Set one measurable weekly checkpoint.",
+			"Keep a fixed review day every week.",
+			"Track trend, not just one-day numbers.",
+		]
+
+	recommended_goal = ai_result.get("recommended_goal")
+	if not isinstance(recommended_goal, dict):
+		recommended_goal = {
+			"title": "AI Vision Goal",
+			"category": "Fitness",
+			"current_value": 0,
+			"target_value": 100,
+			"target_unit": "points",
+			"duration_days": 45,
+			"description": "A clear measurable goal generated from your vision.",
+		}
+
+	return {
+		"summary": summary,
+		"suggestions": suggestions,
+		"recommended_goal": recommended_goal,
+		"source": str(ai_result.get("source") or "fallback"),
+	}
 
 
 @router.post("/", response_model=GoalRead, status_code=status.HTTP_201_CREATED)

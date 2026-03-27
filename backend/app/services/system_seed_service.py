@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.exercise import Exercise
+from app.models.nutrition import FoodItem
 from app.models.workout import Workout
 
 SYSTEM_EXERCISES = [
@@ -66,6 +67,24 @@ SYSTEM_PLANS = [
     },
 ]
 
+SYSTEM_FOOD_ITEMS = [
+    {"name": "Oatmeal", "category": "Grains", "food_type": "veg", "emoji": "oatmeal", "kcal": 150, "protein": 5, "carbs": 27, "fat": 3},
+    {"name": "Quinoa", "category": "Grains", "food_type": "veg", "emoji": "quinoa", "kcal": 120, "protein": 4.4, "carbs": 21.3, "fat": 1.9},
+    {"name": "Brown Rice", "category": "Grains", "food_type": "veg", "emoji": "rice", "kcal": 123, "protein": 2.7, "carbs": 25.6, "fat": 1.0},
+    {"name": "Chicken Breast", "category": "Protein", "food_type": "non-veg", "emoji": "chicken", "kcal": 165, "protein": 31, "carbs": 0, "fat": 3.6},
+    {"name": "Salmon", "category": "Protein", "food_type": "non-veg", "emoji": "salmon", "kcal": 208, "protein": 20, "carbs": 0, "fat": 13},
+    {"name": "Boiled Egg", "category": "Protein", "food_type": "non-veg", "emoji": "egg", "kcal": 155, "protein": 13, "carbs": 1.1, "fat": 11},
+    {"name": "Tofu", "category": "Protein", "food_type": "veg", "emoji": "tofu", "kcal": 76, "protein": 8, "carbs": 1.9, "fat": 4.8},
+    {"name": "Greek Yogurt", "category": "Dairy", "food_type": "veg", "emoji": "yogurt", "kcal": 98, "protein": 10, "carbs": 3.6, "fat": 4},
+    {"name": "Paneer", "category": "Dairy", "food_type": "veg", "emoji": "paneer", "kcal": 265, "protein": 18, "carbs": 1.2, "fat": 21},
+    {"name": "Banana", "category": "Fruits", "food_type": "veg", "emoji": "banana", "kcal": 89, "protein": 1.3, "carbs": 23, "fat": 0.4},
+    {"name": "Apple", "category": "Fruits", "food_type": "veg", "emoji": "apple", "kcal": 52, "protein": 0.3, "carbs": 14, "fat": 0.2},
+    {"name": "Broccoli", "category": "Vegetables", "food_type": "veg", "emoji": "broccoli", "kcal": 34, "protein": 2.8, "carbs": 7, "fat": 0.4},
+    {"name": "Spinach", "category": "Vegetables", "food_type": "veg", "emoji": "spinach", "kcal": 23, "protein": 2.9, "carbs": 3.6, "fat": 0.4},
+    {"name": "Almonds", "category": "Snacks", "food_type": "veg", "emoji": "almonds", "kcal": 579, "protein": 21, "carbs": 22, "fat": 50},
+    {"name": "Protein Shake", "category": "Beverages", "food_type": "veg", "emoji": "shake", "kcal": 50, "protein": 8, "carbs": 5, "fat": 0.5},
+]
+
 
 def seed_system_exercises(db: Session) -> int:
     existing_names = {
@@ -124,8 +143,42 @@ def seed_system_plans(db: Session) -> int:
     return created
 
 
+def seed_system_food_items(db: Session) -> int:
+    existing_names = {
+        name
+        for name in db.execute(
+            select(FoodItem.name).where(FoodItem.owner_id.is_(None))
+        ).scalars().all()
+    }
+
+    created = 0
+    for item in SYSTEM_FOOD_ITEMS:
+        if item["name"] in existing_names:
+            continue
+        db.add(
+            FoodItem(
+                name=item["name"],
+                category=item["category"],
+                food_type=item["food_type"],
+                emoji=item["emoji"],
+                kcal_per_100g=item["kcal"],
+                protein_per_100g=item["protein"],
+                carbs_per_100g=item["carbs"],
+                fat_per_100g=item["fat"],
+                owner_id=None,
+            )
+        )
+        created += 1
+
+    if created:
+        db.commit()
+
+    return created
+
+
 def ensure_default_seed_data(db: Session) -> dict[str, int]:
     return {
         "exercises_created": seed_system_exercises(db),
         "plans_created": seed_system_plans(db),
+        "foods_created": seed_system_food_items(db),
     }

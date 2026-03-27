@@ -26,7 +26,6 @@ COPY backend/app ./app
 COPY backend/alembic ./alembic
 COPY backend/celery_worker ./celery_worker
 COPY backend/alembic.ini .
-COPY seed.py .
 
 # Create non-root user
 RUN adduser --disabled-password --gecos '' appuser && \

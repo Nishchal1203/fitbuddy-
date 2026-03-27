@@ -8,10 +8,11 @@ from app.api.routes import exercises as exercises_routes
 from app.api.routes import workouts as workouts_routes
 from app.api.routes import goals as goals_routes
 from app.api.routes import users as users_routes
-from app.api.routes import plans as plans_routes
+from app.api.routes import workout_plans as workout_plans_routes
 from app.api.routes import progress as progress_routes
 from app.api.routes import health as health_routes
 from app.api.routes import reports as reports_routes
+from app.api.routes import nutrition as nutrition_routes
 from app.services.system_seed_service import ensure_default_seed_data
 import app.db.base  # noqa: F401  # ensure models are imported
 
@@ -50,7 +51,6 @@ def on_startup():
         "ALTER TABLE workouts ADD COLUMN IF NOT EXISTS exercises JSON",
         "ALTER TABLE workouts ALTER COLUMN owner_id DROP NOT NULL",
         "ALTER TABLE exercises ALTER COLUMN owner_id DROP NOT NULL",
-        "ALTER TABLE saved_plans ADD COLUMN IF NOT EXISTS start_date TIMESTAMP",
     ]
     with engine.execution_options(isolation_level="AUTOCOMMIT").connect() as conn:
         for stmt in _ddl_statements:
@@ -84,6 +84,7 @@ app.include_router(workouts_routes.router, prefix="/api")
 app.include_router(goals_routes.router, prefix="/api")
 app.include_router(progress_routes.router, prefix="/api")
 app.include_router(users_routes.router, prefix="/api")
-app.include_router(plans_routes.router, prefix="/api")
+app.include_router(workout_plans_routes.router, prefix="/api")
 app.include_router(health_routes.router, prefix="/api")
 app.include_router(reports_routes.router, prefix="/api")
+app.include_router(nutrition_routes.router, prefix="/api")

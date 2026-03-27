@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import TYPE_CHECKING
-from sqlalchemy import String, ForeignKey, DateTime, Text, Integer, JSON
+from sqlalchemy import String, ForeignKey, DateTime, Text, Integer, JSON, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -54,12 +54,23 @@ class Workout(Base):
 	is_completed: Mapped[bool] = mapped_column(default=False, nullable=False)
 	completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
+	followers: Mapped[list[WorkoutPlanFollow]] = relationship(
+		back_populates="workout",
+		cascade="all, delete-orphan",
+	)
 
-class SavedPlan(Base):
-	__tablename__ = "saved_plans"
+
+class WorkoutPlanFollow(Base):
+	__tablename__ = "workout_plan_follows"
+	__table_args__ = (
+		UniqueConstraint("user_id", "workout_id", name="uq_workout_plan_follows_user_workout"),
+	)
 
 	id: Mapped[int] = mapped_column(primary_key=True, index=True)
 	user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
 	workout_id: Mapped[int] = mapped_column(ForeignKey("workouts.id", ondelete="CASCADE"), index=True, nullable=False)
-	start_date: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow, nullable=True)
+	start_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+	user: Mapped[User] = relationship(back_populates="followed_workout_plans")
+	workout: Mapped[Workout] = relationship(back_populates="followers")
 

@@ -5,16 +5,14 @@
 @layer base {
   :root {
     color-scheme: light;
-    --color-brand-gold: theme('colors.brand.gold');
-    --color-brand-purple: theme('colors.brand.purple');
-    --color-brand-pale: theme('colors.brand.pale');
-    --color-brand-mauve: theme('colors.brand.mauve');
-    --color-brand-slate: theme('colors.brand.slate');
+    --color-brand-gold: theme("colors.brand.gold");
+    --color-brand-purple: theme("colors.brand.purple");
+    --color-brand-pale: theme("colors.brand.pale");
+    --color-brand-mauve: theme("colors.brand.mauve");
+    --color-brand-slate: theme("colors.brand.slate");
   }
 
   body {
     @apply bg-brand-bg text-brand-slate;
   }
 }
-
-

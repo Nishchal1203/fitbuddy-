@@ -1,70 +1,78 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import Image from 'next/image'
-import logo from '../../assets/logo1.svg'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import logo from "../../assets/Logo_full.svg";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setLoading(true)
-    setError('')
+    event.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
-      const form = new FormData(event.currentTarget)
-      const email = String(form.get('email') || '')
-      const password = String(form.get('password') || '')
+      const form = new FormData(event.currentTarget);
+      const email = String(form.get("email") || "");
+      const password = String(form.get("password") || "");
 
-      const formData = new FormData()
-      formData.append('username', email)
-      formData.append('password', password)
+      const formData = new FormData();
+      formData.append("username", email);
+      formData.append("password", password);
 
       const response = await fetch(`${API_BASE_URL}/api/auth/token`, {
-        method: 'POST',
+        method: "POST",
         body: formData,
-      })
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Login failed')
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Login failed");
       }
 
-      const tokenData = await response.json()
-      localStorage.setItem('access_token', tokenData.access_token)
-      router.replace('/dashboard')
+      const tokenData = await response.json();
+      localStorage.setItem("access_token", tokenData.access_token);
+      router.replace("/dashboard");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   const inputCls =
-    'w-full rounded-xl border border-brand-pale bg-white px-3.5 py-2.5 text-sm text-brand-slate outline-none transition placeholder:text-brand-slate/40 focus:border-brand-soft focus:ring-2 focus:ring-brand-soft/20'
+    "w-full rounded-xl border border-brand-pale bg-white px-3.5 py-2.5 text-sm text-brand-slate outline-none transition placeholder:text-brand-slate/40 focus:border-brand-soft focus:ring-2 focus:ring-brand-soft/20";
 
   const labelCls =
-    'mb-1.5 block text-xs font-semibold uppercase tracking-widest text-brand-slate'
+    "mb-1.5 block text-xs font-semibold uppercase tracking-widest text-brand-slate";
 
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-brand-bg px-4 py-8">
       <div className="w-full max-w-[23rem] rounded-2xl border border-brand-pale bg-white px-6 py-7 shadow-[0_20px_50px_-22px_#9567B9]">
         <div className="mb-5 flex items-center gap-3">
-          <Image src={logo} alt="Fit Buddy logo" width={36} height={36} className="rounded-xl" />
+          <Image
+            src={logo}
+            alt="Fit Buddy logo"
+            width={40}
+            height={40}
+            className="rounded-xl"
+          />
           <div>
-            <p className="text-xs font-semibold tracking-wide text-brand-deep">FITBUDDY</p>
+            {/* <p className="text-xs font-semibold tracking-wide text-brand-deep">FITBUDDY</p> */}
             <h1 className="text-xl font-bold text-brand-slate">Welcome Back</h1>
           </div>
         </div>
 
-        <p className="mb-5 text-sm text-brand-slate/70">Login to continue your fitness journey.</p>
+        <p className="mb-5 text-sm text-brand-slate/70">
+          Login to continue your fitness journey.
+        </p>
 
         {error && (
           <div className="mb-4 rounded-xl border border-brand-goldLight bg-brand-goldLight/30 px-3 py-2 text-sm text-brand-slate">
@@ -72,18 +80,42 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="grid gap-3.5" data-lpignore="true">
+        <form
+          onSubmit={handleSubmit}
+          className="grid gap-3.5"
+          data-lpignore="true"
+        >
           <div>
-            <label htmlFor="email" className={labelCls}>Email</label>
-            <input id="email" name="email" type="email" required placeholder="you@example.com" className={inputCls} />
+            <label htmlFor="email" className={labelCls}>
+              Email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              placeholder="you@example.com"
+              className={inputCls}
+            />
           </div>
 
           <div>
             <div className="mb-1.5 flex items-center justify-between">
-              <label htmlFor="password" className={labelCls}>Password</label>
-              <span className="text-xs font-semibold text-brand-purple">Forgot Password?</span>
+              <label htmlFor="password" className={labelCls}>
+                Password
+              </label>
+              <span className="text-xs font-semibold text-brand-purple">
+                Forgot Password?
+              </span>
             </div>
-            <input id="password" name="password" type="password" required placeholder="••••••••" className={inputCls} />
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              placeholder="••••••••"
+              className={inputCls}
+            />
           </div>
 
           <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-brand-slate/70">
@@ -95,20 +127,25 @@ export default function LoginPage() {
             type="submit"
             disabled={loading}
             className={`mt-1 w-full rounded-xl py-3 text-sm font-semibold text-white transition ${
-              loading ? 'cursor-not-allowed bg-brand-mauve' : 'bg-gradient-to-r from-brand-purple to-brand-deep hover:opacity-95'
+              loading
+                ? "cursor-not-allowed bg-brand-mauve"
+                : "bg-gradient-to-r from-brand-purple to-brand-deep hover:opacity-95"
             }`}
           >
-            {loading ? 'Processing...' : 'Login'}
+            {loading ? "Processing..." : "Login"}
           </button>
         </form>
 
         <p className="mt-5 text-center text-sm text-brand-slate/70">
-          No account?{' '}
-          <Link href="/signup" className="font-semibold text-brand-gold hover:text-brand-deep">
+          No account?{" "}
+          <Link
+            href="/signup"
+            className="font-semibold text-brand-gold hover:text-brand-deep"
+          >
             Create one
           </Link>
         </p>
       </div>
     </div>
-  )
+  );
 }

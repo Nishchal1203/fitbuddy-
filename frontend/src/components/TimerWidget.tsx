@@ -1,91 +1,94 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react'
-import { Play, Pause, Square, RotateCcw, Clock } from 'lucide-react'
+import React, { useState, useEffect, useRef } from "react";
+import { Play, Pause, Square, RotateCcw, Clock } from "lucide-react";
 
 export default function TimerWidget() {
-  const [time, setTime] = useState(0) // time in seconds
-  const [isRunning, setIsRunning] = useState(false)
-  const [isPaused, setIsPaused] = useState(false)
-  const [laps, setLaps] = useState([])
-  const intervalRef = useRef(null)
+  const [time, setTime] = useState(0); // time in seconds
+  const [isRunning, setIsRunning] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [laps, setLaps] = useState([]);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
     if (isRunning && !isPaused) {
       intervalRef.current = setInterval(() => {
-        setTime(prevTime => prevTime + 1)
-      }, 1000)
+        setTime((prevTime) => prevTime + 1);
+      }, 1000);
     } else {
-      clearInterval(intervalRef.current)
+      clearInterval(intervalRef.current);
     }
 
-    return () => clearInterval(intervalRef.current)
-  }, [isRunning, isPaused])
+    return () => clearInterval(intervalRef.current);
+  }, [isRunning, isPaused]);
 
   const formatTime = (seconds) => {
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const secs = seconds % 60
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
 
     if (hours > 0) {
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+      return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     }
-    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
+    return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
 
   const handleStart = () => {
-    setIsRunning(true)
-    setIsPaused(false)
-  }
+    setIsRunning(true);
+    setIsPaused(false);
+  };
 
   const handlePause = () => {
-    setIsPaused(true)
-    setIsRunning(false)
-  }
+    setIsPaused(true);
+    setIsRunning(false);
+  };
 
   const handleResume = () => {
-    setIsRunning(true)
-    setIsPaused(false)
-  }
+    setIsRunning(true);
+    setIsPaused(false);
+  };
 
   const handleStop = () => {
-    setIsRunning(false)
-    setIsPaused(false)
-    setTime(0)
-    setLaps([])
-  }
+    setIsRunning(false);
+    setIsPaused(false);
+    setTime(0);
+    setLaps([]);
+  };
 
   const handleReset = () => {
-    setTime(0)
-    setLaps([])
-    setIsRunning(false)
-    setIsPaused(false)
-  }
+    setTime(0);
+    setLaps([]);
+    setIsRunning(false);
+    setIsPaused(false);
+  };
 
   const handleLap = () => {
     if (isRunning || isPaused) {
-      setLaps(prevLaps => [...prevLaps, {
-        id: Date.now(),
-        time: time,
-        formattedTime: formatTime(time)
-      }])
+      setLaps((prevLaps) => [
+        ...prevLaps,
+        {
+          id: Date.now(),
+          time: time,
+          formattedTime: formatTime(time),
+        },
+      ]);
     }
-  }
+  };
 
   const getTimerColor = () => {
-    if (time === 0) return 'text-gray-400'
-    if (time < 60) return 'text-green-600'
-    if (time < 300) return 'text-blue-600' // 5 minutes
-    if (time < 900) return 'text-orange-600' // 15 minutes
-    return 'text-red-600'
-  }
+    if (time === 0) return "text-gray-400";
+    if (time < 60) return "text-green-600";
+    if (time < 300) return "text-blue-600"; // 5 minutes
+    if (time < 900) return "text-orange-600"; // 15 minutes
+    return "text-red-600";
+  };
 
   const getTimerSize = () => {
-    if (time === 0) return 'text-4xl'
-    if (time < 60) return 'text-5xl'
-    if (time < 300) return 'text-6xl'
-    return 'text-7xl'
-  }
+    if (time === 0) return "text-4xl";
+    if (time < 60) return "text-5xl";
+    if (time < 300) return "text-6xl";
+    return "text-7xl";
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
@@ -98,13 +101,19 @@ export default function TimerWidget() {
 
       {/* Timer Display */}
       <div className="text-center mb-8">
-        <div className={`font-mono font-bold ${getTimerSize()} ${getTimerColor()} mb-2 transition-all duration-300`}>
+        <div
+          className={`font-mono font-bold ${getTimerSize()} ${getTimerColor()} mb-2 transition-all duration-300`}
+        >
           {formatTime(time)}
         </div>
         <div className="text-sm text-gray-500">
-          {time === 0 ? 'Ready to start' : 
-           isRunning ? 'Running' : 
-           isPaused ? 'Paused' : 'Stopped'}
+          {time === 0
+            ? "Ready to start"
+            : isRunning
+              ? "Running"
+              : isPaused
+                ? "Paused"
+                : "Stopped"}
         </div>
       </div>
 
@@ -182,21 +191,32 @@ export default function TimerWidget() {
       {/* Lap Times */}
       {laps.length > 0 && (
         <div className="border-t border-gray-200 pt-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Lap Times</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Lap Times
+          </h3>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {laps.map((lap, index) => (
-              <div key={lap.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-700">Lap {index + 1}</span>
-                <span className="font-mono text-sm font-semibold text-gray-900">{lap.formattedTime}</span>
+              <div
+                key={lap.id}
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              >
+                <span className="text-sm font-medium text-gray-700">
+                  Lap {index + 1}
+                </span>
+                <span className="font-mono text-sm font-semibold text-gray-900">
+                  {lap.formattedTime}
+                </span>
               </div>
             ))}
           </div>
-          
+
           {laps.length > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Total Laps:</span>
-                <span className="font-semibold text-gray-900">{laps.length}</span>
+                <span className="font-semibold text-gray-900">
+                  {laps.length}
+                </span>
               </div>
             </div>
           )}
@@ -233,5 +253,5 @@ export default function TimerWidget() {
         </div>
       </div>
     </div>
-  )
+  );
 }

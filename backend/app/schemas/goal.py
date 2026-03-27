@@ -1,5 +1,5 @@
 from datetime import date
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class GoalBase(BaseModel):
@@ -24,4 +24,16 @@ class GoalUpdate(BaseModel):
 
 class GoalRead(GoalBase):
 	id: int
+
+
+class AIGoalDraftCreate(BaseModel):
+	prompt: str = Field(min_length=3, max_length=3000)
+	user_context: dict | None = None
+
+
+class AIGoalDraftResponse(BaseModel):
+	summary: str
+	suggestions: list[str]
+	recommended_goal: dict
+	source: str
 

@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect } from 'react'
-import { Line } from 'react-chartjs-2'
+import React, { useState, useEffect } from "react";
+import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,9 +11,9 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler
-} from 'chart.js'
-import { TrendingUp, Calendar, Filter } from 'lucide-react'
+  Filler,
+} from "chart.js";
+import { TrendingUp, Calendar, Filter } from "lucide-react";
 
 // Register Chart.js components
 ChartJS.register(
@@ -24,169 +24,180 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
-)
+  Filler,
+);
 
-const API_BASE_URL = 'http://localhost:8000'
+const API_BASE_URL = "http://localhost:8000";
 
 type ProgressChartProps = {
-  refreshTrigger?: number
-}
+  refreshTrigger?: number;
+};
 
-export default function ProgressChart({ refreshTrigger = 0 }: ProgressChartProps) {
-  const [progressData, setProgressData] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [selectedMetric, setSelectedMetric] = useState('')
-  const [timeRange, setTimeRange] = useState('30') // days
+export default function ProgressChart({
+  refreshTrigger = 0,
+}: ProgressChartProps) {
+  const [progressData, setProgressData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [selectedMetric, setSelectedMetric] = useState("");
+  const [timeRange, setTimeRange] = useState("30"); // days
 
   const timeRanges = [
-    { value: '7', label: '7 Days' },
-    { value: '30', label: '30 Days' },
-    { value: '45', label: '45 Days' },
-    { value: '60', label: '60 Days' },
-    { value: '90', label: '90 Days' },
-    { value: '365', label: '1 Year' }
-  ]
+    { value: "7", label: "7 Days" },
+    { value: "30", label: "30 Days" },
+    { value: "45", label: "45 Days" },
+    { value: "60", label: "60 Days" },
+    { value: "90", label: "90 Days" },
+    { value: "365", label: "1 Year" },
+  ];
 
   useEffect(() => {
-    fetchProgressData()
-  }, [timeRange, refreshTrigger])
+    fetchProgressData();
+  }, [timeRange, refreshTrigger]);
 
   const fetchProgressData = async () => {
-    setLoading(true)
-    setError('')
-    
+    setLoading(true);
+    setError("");
+
     try {
-      const token = localStorage.getItem('access_token')
+      const token = localStorage.getItem("access_token");
       const response = await fetch(`${API_BASE_URL}/api/progress/`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to fetch progress data')
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to fetch progress data");
       }
 
-      const data = await response.json()
-      setProgressData(Array.isArray(data) ? data : [])
-      
+      const data = await response.json();
+      setProgressData(Array.isArray(data) ? data : []);
+
       // Set default metric if none selected
       if (!selectedMetric && data.length > 0) {
-        const metrics = [...new Set(data.map(item => item.metric_name))]
+        const metrics = [...new Set(data.map((item) => item.metric_name))];
         if (metrics.length > 0) {
-          setSelectedMetric(metrics[0])
+          setSelectedMetric(metrics[0]);
         }
       }
     } catch (err) {
-      setError(err.message)
+      setError(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Filter data based on time range and selected metric
-  const filteredData = progressData.filter(item => {
-    const itemDate = new Date(item.date)
-    const cutoffDate = new Date()
-    cutoffDate.setDate(cutoffDate.getDate() - parseInt(timeRange))
-    
-    return itemDate >= cutoffDate && 
-           (!selectedMetric || item.metric_name === selectedMetric)
-  }).sort((a, b) => new Date(a.date) - new Date(b.date))
+  const filteredData = progressData
+    .filter((item) => {
+      const itemDate = new Date(item.date);
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - parseInt(timeRange));
+
+      return (
+        itemDate >= cutoffDate &&
+        (!selectedMetric || item.metric_name === selectedMetric)
+      );
+    })
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   // Get unique metrics for filter
-  const availableMetrics = [...new Set(progressData.map(item => item.metric_name))]
+  const availableMetrics = [
+    ...new Set(progressData.map((item) => item.metric_name)),
+  ];
 
   // Prepare chart data
   const chartData = {
-    labels: filteredData.map(item => {
-      const date = new Date(item.date)
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    labels: filteredData.map((item) => {
+      const date = new Date(item.date);
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
     }),
     datasets: [
       {
-        label: selectedMetric || 'Progress',
-        data: filteredData.map(item => item.metric_value),
-        borderColor: '#7c3aed',
-        backgroundColor: 'rgba(124, 58, 237, 0.1)',
+        label: selectedMetric || "Progress",
+        data: filteredData.map((item) => item.metric_value),
+        borderColor: "#7c3aed",
+        backgroundColor: "rgba(124, 58, 237, 0.1)",
         borderWidth: 3,
-        pointBackgroundColor: '#7c3aed',
-        pointBorderColor: '#ffffff',
+        pointBackgroundColor: "#7c3aed",
+        pointBorderColor: "#ffffff",
         pointBorderWidth: 2,
         pointRadius: 6,
         pointHoverRadius: 8,
         fill: true,
-        tension: 0.4
-      }
-    ]
-  }
+        tension: 0.4,
+      },
+    ],
+  };
 
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: false
+        display: false,
       },
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#7c3aed',
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        titleColor: "#ffffff",
+        bodyColor: "#ffffff",
+        borderColor: "#7c3aed",
         borderWidth: 1,
         cornerRadius: 8,
         displayColors: false,
         callbacks: {
-          title: function(context) {
-            const dataIndex = context[0].dataIndex
-            const item = filteredData[dataIndex]
-            return new Date(item.date).toLocaleDateString('en-US', { 
-              weekday: 'short',
-              month: 'short', 
-              day: 'numeric',
-              year: 'numeric'
-            })
+          title: function (context) {
+            const dataIndex = context[0].dataIndex;
+            const item = filteredData[dataIndex];
+            return new Date(item.date).toLocaleDateString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            });
           },
-          label: function(context) {
-            const item = filteredData[context.dataIndex]
-            return `${item.metric_name}: ${item.metric_value}${item.unit ? ` ${item.unit}` : ''}`
-          }
-        }
-      }
+          label: function (context) {
+            const item = filteredData[context.dataIndex];
+            return `${item.metric_name}: ${item.metric_value}${item.unit ? ` ${item.unit}` : ""}`;
+          },
+        },
+      },
     },
     scales: {
       x: {
         grid: {
-          display: false
+          display: false,
         },
         ticks: {
-          color: '#6b7280',
+          color: "#6b7280",
           font: {
-            size: 12
-          }
-        }
+            size: 12,
+          },
+        },
       },
       y: {
         grid: {
-          color: '#f3f4f6',
-          drawBorder: false
+          color: "#f3f4f6",
+          drawBorder: false,
         },
         ticks: {
-          color: '#6b7280',
+          color: "#6b7280",
           font: {
-            size: 12
-          }
-        }
-      }
+            size: 12,
+          },
+        },
+      },
     },
     interaction: {
       intersect: false,
-      mode: 'index'
-    }
-  }
+      mode: "index",
+    },
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
@@ -195,7 +206,9 @@ export default function ProgressChart({ refreshTrigger = 0 }: ProgressChartProps
           <div className="h-8 w-8 rounded-lg bg-primary-600 grid place-items-center text-white">
             <TrendingUp size={18} />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900">Progress Chart</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            Progress Chart
+          </h2>
         </div>
 
         <div className="flex gap-2">
@@ -204,7 +217,7 @@ export default function ProgressChart({ refreshTrigger = 0 }: ProgressChartProps
             onChange={(e) => setTimeRange(e.target.value)}
             className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
-            {timeRanges.map(range => (
+            {timeRanges.map((range) => (
               <option key={range.value} value={range.value}>
                 {range.label}
               </option>
@@ -218,7 +231,7 @@ export default function ProgressChart({ refreshTrigger = 0 }: ProgressChartProps
               className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
               <option value="">All Metrics</option>
-              {availableMetrics.map(metric => (
+              {availableMetrics.map((metric) => (
                 <option key={metric} value={metric}>
                   {metric}
                 </option>
@@ -282,5 +295,5 @@ export default function ProgressChart({ refreshTrigger = 0 }: ProgressChartProps
         </div>
       )}
     </div>
-  )
+  );
 }

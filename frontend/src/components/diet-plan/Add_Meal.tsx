@@ -1,10 +1,18 @@
-'use client'
+"use client";
 
-import React, { useMemo, useState } from 'react'
-import { Filter, Plus, UtensilsCrossed, X, Search, Leaf, Drumstick } from 'lucide-react'
+import React, { useMemo, useState } from "react";
+import {
+  Filter,
+  Plus,
+  UtensilsCrossed,
+  X,
+  Search,
+  Leaf,
+  Drumstick,
+} from "lucide-react";
 
-import { Button } from '@/components/ui/Button'
-import { Modal } from '@/components/ui/Modal'
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import {
   CATEGORIES,
   FOOD_CATALOG,
@@ -13,39 +21,53 @@ import {
   type FoodCatalogItem,
   type MealItem,
   type FoodCategory,
-} from '@/lib/constants'
+} from "@/Utils/constants";
 
 /* ─────────────────────────────────────────────
    TYPES
 ───────────────────────────────────────────── */
-export type AddMealItem = MealItem
+export type AddMealItem = MealItem;
+
+export type AddMealLogItem = AddMealItem & {
+  grams: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+};
+
+export type AddMealLogTarget = "actual" | "planned";
 
 type DraftMealEntry = {
-  item: FoodCatalogItem
-  grams: number
-}
+  item: FoodCatalogItem;
+  grams: number;
+};
 
 type AddMealModalProps = {
-  isOpen: boolean
-  sections: string[]
-  onClose: () => void
-  onAddMeals: (section: string, meals: AddMealItem[]) => void
-}
+  isOpen: boolean;
+  sections: string[];
+  onClose: () => void;
+  onAddMeals: (
+    section: string,
+    meals: AddMealLogItem[],
+    loggedAt: string,
+    target: AddMealLogTarget,
+  ) => void;
+};
 
 /* ─────────────────────────────────────────────
    HELPERS
 ───────────────────────────────────────────── */
-function VegDot({ type }: { type: 'veg' | 'non-veg' }) {
+function VegDot({ type }: { type: "veg" | "non-veg" }) {
   return (
     <span
-      title={type === 'veg' ? 'Vegetarian' : 'Non-Vegetarian'}
+      title={type === "veg" ? "Vegetarian" : "Non-Vegetarian"}
       className={`inline-block h-2.5 w-2.5 rounded-full border-2 flex-shrink-0 ${
-        type === 'veg'
-          ? 'border-green-500 bg-green-400'
-          : 'border-red-400 bg-red-400'
+        type === "veg"
+          ? "border-green-500 bg-green-400"
+          : "border-red-400 bg-red-400"
       }`}
     />
-  )
+  );
 }
 
 /* ─────────────────────────────────────────────
@@ -57,118 +79,153 @@ export default function Add_Meal({
   onClose,
   onAddMeals,
 }: AddMealModalProps) {
-  const [search, setSearch]                   = useState('')
-  const [selectedSection, setSelectedSection] = useState('Breakfast')
-  const [draftEntries, setDraftEntries]       = useState<DraftMealEntry[]>([])
-  const [dietFilter, setDietFilter]           = useState<DietType>('all')
-  const [categoryFilter, setCategoryFilter]   = useState<FoodCategory>('All')
-  const [showFilters, setShowFilters]         = useState(false)
+  const nowLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
 
-  const sectionOptions = sections.length > 0 ? sections : ['Breakfast', 'Lunch', 'Dinner', 'Snacks']
+  const [search, setSearch] = useState("");
+  const [selectedSection, setSelectedSection] = useState("Breakfast");
+  const [loggedAt, setLoggedAt] = useState(nowLocal);
+  const [logTarget, setLogTarget] = useState<AddMealLogTarget | null>(null);
+  const [draftEntries, setDraftEntries] = useState<DraftMealEntry[]>([]);
+  const [dietFilter, setDietFilter] = useState<DietType>("all");
+  const [categoryFilter, setCategoryFilter] = useState<FoodCategory>("All");
+  const [showFilters, setShowFilters] = useState(false);
+
+  const sectionOptions =
+    sections.length > 0 ? sections : ["Breakfast", "Lunch", "Dinner", "Snacks"];
 
   /* ── filter + search logic ── */
-  const isSearching = search.trim().length > 0 || categoryFilter !== 'All' || dietFilter !== 'all'
+  const isSearching =
+    search.trim().length > 0 ||
+    categoryFilter !== "All" ||
+    dietFilter !== "all";
 
   const filteredItems = useMemo(() => {
-    const q = search.trim().toLowerCase()
+    const q = search.trim().toLowerCase();
 
     return FOOD_CATALOG.filter((food) => {
-      const matchesSearch  = !q || food.name.toLowerCase().includes(q)
-      const matchesDiet    = dietFilter === 'all' || food.type === dietFilter
-      const matchesCategory = categoryFilter === 'All' || food.category === categoryFilter
-      return matchesSearch && matchesDiet && matchesCategory
-    })
-  }, [search, dietFilter, categoryFilter])
+      const matchesSearch = !q || food.name.toLowerCase().includes(q);
+      const matchesDiet = dietFilter === "all" || food.type === dietFilter;
+      const matchesCategory =
+        categoryFilter === "All" || food.category === categoryFilter;
+      return matchesSearch && matchesDiet && matchesCategory;
+    });
+  }, [search, dietFilter, categoryFilter]);
 
   /* Show recent (max 5) when not searching, else show filtered results */
-  const displayItems = isSearching ? filteredItems : RECENT_ITEMS.slice(0, 5)
+  const displayItems = isSearching ? filteredItems : RECENT_ITEMS.slice(0, 5);
 
   /* ── macro preview ── */
   const macroTotals = useMemo(() => {
     return draftEntries.reduce(
       (acc, entry) => {
-        const r = entry.grams / 100
-        acc.kcal    += entry.item.kcalPer100g    * r
-        acc.protein += entry.item.proteinPer100g * r
-        acc.carbs   += entry.item.carbsPer100g   * r
-        acc.fat     += entry.item.fatPer100g     * r
-        return acc
+        const r = entry.grams / 100;
+        acc.kcal += entry.item.kcalPer100g * r;
+        acc.protein += entry.item.proteinPer100g * r;
+        acc.carbs += entry.item.carbsPer100g * r;
+        acc.fat += entry.item.fatPer100g * r;
+        return acc;
       },
-      { kcal: 0, protein: 0, carbs: 0, fat: 0 }
-    )
-  }, [draftEntries])
+      { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+    );
+  }, [draftEntries]);
 
   const macroEnergy = {
     protein: macroTotals.protein * 4,
-    carbs:   macroTotals.carbs   * 4,
-    fat:     macroTotals.fat     * 9,
-  }
+    carbs: macroTotals.carbs * 4,
+    fat: macroTotals.fat * 9,
+  };
   const totalMacroEnergy = Math.max(
     macroEnergy.protein + macroEnergy.carbs + macroEnergy.fat,
-    1
-  )
+    1,
+  );
 
   /* ── draft helpers ── */
   function addDraftEntry(item: FoodCatalogItem) {
     setDraftEntries((prev) => {
-      if (prev.find((e) => e.item.id === item.id)) return prev
-      return [...prev, { item, grams: 100 }]
-    })
+      if (prev.find((e) => e.item.id === item.id)) return prev;
+      return [...prev, { item, grams: 100 }];
+    });
   }
 
   function removeDraftEntry(id: string) {
-    setDraftEntries((prev) => prev.filter((e) => e.item.id !== id))
+    setDraftEntries((prev) => prev.filter((e) => e.item.id !== id));
   }
 
   function setDraftGrams(id: string, grams: number) {
-    const safe = Number.isFinite(grams) ? Math.max(1, grams) : 1
+    const safe = Number.isFinite(grams) ? Math.max(1, grams) : 1;
     setDraftEntries((prev) =>
-      prev.map((e) => (e.item.id === id ? { ...e, grams: safe } : e))
-    )
+      prev.map((e) => (e.item.id === id ? { ...e, grams: safe } : e)),
+    );
   }
 
   function resetModal() {
-    setSearch('')
-    setDraftEntries([])
-    setDietFilter('all')
-    setCategoryFilter('All')
-    setShowFilters(false)
-    setSelectedSection(sectionOptions[0] || 'Breakfast')
-    onClose()
+    setSearch("");
+    setDraftEntries([]);
+    setDietFilter("all");
+    setCategoryFilter("All");
+    setShowFilters(false);
+    setSelectedSection(sectionOptions[0] || "Breakfast");
+    setLogTarget(null);
+    setLoggedAt(nowLocal);
+    onClose();
   }
 
   function handleAddMeal() {
-    if (draftEntries.length === 0) return
+    if (draftEntries.length === 0 || !logTarget) return;
 
-    const meals: AddMealItem[] = draftEntries.map((entry) => {
-      const r       = entry.grams / 100
-      const protein = entry.item.proteinPer100g * r
-      const carbs   = entry.item.carbsPer100g   * r
-      const fat     = entry.item.fatPer100g     * r
-      const kcal    = entry.item.kcalPer100g    * r
+    const meals: AddMealLogItem[] = draftEntries.map((entry) => {
+      const r = entry.grams / 100;
+      const protein = entry.item.proteinPer100g * r;
+      const carbs = entry.item.carbsPer100g * r;
+      const fat = entry.item.fatPer100g * r;
+      const kcal = entry.item.kcalPer100g * r;
 
       return {
         name: `${entry.item.name} (${entry.grams}g)`,
         kcal: Math.round(kcal),
+        grams: entry.grams,
+        protein_g: Number(protein.toFixed(1)),
+        carbs_g: Number(carbs.toFixed(1)),
+        fat_g: Number(fat.toFixed(1)),
         macros: [
-          { label: 'Protein', value: `${protein.toFixed(1)}g`, color: 'bg-brand-purple text-white' },
-          { label: 'Carbs',   value: `${carbs.toFixed(1)}g`,   color: 'bg-brand-gold text-white' },
-          { label: 'Fat',     value: `${fat.toFixed(1)}g`,     color: 'bg-brand-mauve text-white' },
+          {
+            label: "Protein",
+            value: `${protein.toFixed(1)}g`,
+            color: "bg-brand-purple text-white",
+          },
+          {
+            label: "Carbs",
+            value: `${carbs.toFixed(1)}g`,
+            color: "bg-brand-gold text-white",
+          },
+          {
+            label: "Fat",
+            value: `${fat.toFixed(1)}g`,
+            color: "bg-brand-mauve text-white",
+          },
         ],
-      }
-    })
+      };
+    });
 
-    onAddMeals(selectedSection, meals)
-    resetModal()
+    const safeLoggedAt = new Date(loggedAt || nowLocal).toISOString();
+    onAddMeals(selectedSection, meals, safeLoggedAt, logTarget);
+    resetModal();
   }
 
   /* ── active filter count badge ── */
-  const activeFilterCount = (dietFilter !== 'all' ? 1 : 0) + (categoryFilter !== 'All' ? 1 : 0)
+  const activeFilterCount =
+    (dietFilter !== "all" ? 1 : 0) + (categoryFilter !== "All" ? 1 : 0);
 
   return (
-    <Modal isOpen={isOpen} onClose={resetModal} title="Add Meal" className="max-w-[540px] bg-brand-bg">
+    <Modal
+      isOpen={isOpen}
+      onClose={resetModal}
+      title="Add Meal"
+      className="max-w-[540px] bg-brand-bg"
+    >
       <div className="space-y-4">
-
         {/* ── Section selector ── */}
         <div className="flex flex-wrap gap-2">
           {sectionOptions.map((section) => (
@@ -178,13 +235,55 @@ export default function Add_Meal({
               onClick={() => setSelectedSection(section)}
               className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
                 selectedSection === section
-                  ? 'border-brand-purple bg-brand-purple text-white'
-                  : 'border-brand-pale bg-white text-brand-slate hover:bg-brand-bg'
+                  ? "border-brand-purple bg-brand-purple text-white"
+                  : "border-brand-pale bg-white text-brand-slate hover:bg-brand-bg"
               }`}
             >
               {section}
             </button>
           ))}
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-brand-slate/55">
+            Logging Type
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setLogTarget("actual")}
+              className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                logTarget === "actual"
+                  ? "border-brand-purple bg-brand-purple text-white"
+                  : "border-brand-pale bg-white text-brand-slate hover:bg-brand-bg"
+              }`}
+            >
+              Actual Intake
+            </button>
+            <button
+              type="button"
+              onClick={() => setLogTarget("planned")}
+              className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                logTarget === "planned"
+                  ? "border-brand-purple bg-brand-purple text-white"
+                  : "border-brand-pale bg-white text-brand-slate hover:bg-brand-bg"
+              }`}
+            >
+              Planned Meal
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-brand-slate/55">
+            Eaten At
+          </label>
+          <input
+            type="datetime-local"
+            value={loggedAt}
+            onChange={(e) => setLoggedAt(e.target.value)}
+            className="w-full rounded-xl border border-brand-mauve/60 bg-white px-3 py-2.5 text-sm text-brand-slate focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/15"
+          />
         </div>
 
         {/* ── Search bar + Filter toggle ── */}
@@ -202,7 +301,7 @@ export default function Add_Meal({
             />
             {search && (
               <button
-                onClick={() => setSearch('')}
+                onClick={() => setSearch("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-slate/40 hover:text-brand-slate"
               >
                 <X size={14} />
@@ -216,8 +315,8 @@ export default function Add_Meal({
             onClick={() => setShowFilters((v) => !v)}
             className={`relative flex h-[42px] w-[42px] flex-shrink-0 items-center justify-center rounded-xl border transition ${
               showFilters || activeFilterCount > 0
-                ? 'border-brand-purple bg-brand-purple text-white'
-                : 'border-brand-pale bg-white text-brand-slate hover:bg-brand-bg'
+                ? "border-brand-purple bg-brand-purple text-white"
+                : "border-brand-pale bg-white text-brand-slate hover:bg-brand-bg"
             }`}
           >
             <Filter size={16} />
@@ -232,31 +331,34 @@ export default function Add_Meal({
         {/* ── Filter panel (collapsible) ── */}
         {showFilters && (
           <div className="space-y-3 rounded-2xl border border-brand-pale bg-white p-4">
-
             {/* Diet type */}
             <div>
               <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-brand-slate/55">
                 Diet Type
               </p>
               <div className="flex gap-2">
-                {(['all', 'veg', 'non-veg'] as DietType[]).map((dt) => (
+                {(["all", "veg", "non-veg"] as DietType[]).map((dt) => (
                   <button
                     key={dt}
                     type="button"
                     onClick={() => setDietFilter(dt)}
                     className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition ${
                       dietFilter === dt
-                        ? dt === 'veg'
-                          ? 'border-green-400 bg-green-50 text-green-700'
-                          : dt === 'non-veg'
-                          ? 'border-red-400 bg-red-50 text-red-600'
-                          : 'border-brand-purple bg-brand-purple text-white'
-                        : 'border-brand-pale bg-brand-bg text-brand-slate hover:border-brand-mauve'
+                        ? dt === "veg"
+                          ? "border-green-400 bg-green-50 text-green-700"
+                          : dt === "non-veg"
+                            ? "border-red-400 bg-red-50 text-red-600"
+                            : "border-brand-purple bg-brand-purple text-white"
+                        : "border-brand-pale bg-brand-bg text-brand-slate hover:border-brand-mauve"
                     }`}
                   >
-                    {dt === 'veg'     && <Leaf size={11} />}
-                    {dt === 'non-veg' && <Drumstick size={11} />}
-                    {dt === 'all' ? 'All' : dt === 'veg' ? 'Vegetarian' : 'Non-Veg'}
+                    {dt === "veg" && <Leaf size={11} />}
+                    {dt === "non-veg" && <Drumstick size={11} />}
+                    {dt === "all"
+                      ? "All"
+                      : dt === "veg"
+                        ? "Vegetarian"
+                        : "Non-Veg"}
                   </button>
                 ))}
               </div>
@@ -275,8 +377,8 @@ export default function Add_Meal({
                     onClick={() => setCategoryFilter(cat)}
                     className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition ${
                       categoryFilter === cat
-                        ? 'border-brand-purple bg-brand-purple text-white'
-                        : 'border-brand-pale bg-brand-bg text-brand-slate hover:border-brand-mauve'
+                        ? "border-brand-purple bg-brand-purple text-white"
+                        : "border-brand-pale bg-brand-bg text-brand-slate hover:border-brand-mauve"
                     }`}
                   >
                     {cat}
@@ -289,7 +391,10 @@ export default function Add_Meal({
             {activeFilterCount > 0 && (
               <button
                 type="button"
-                onClick={() => { setDietFilter('all'); setCategoryFilter('All') }}
+                onClick={() => {
+                  setDietFilter("all");
+                  setCategoryFilter("All");
+                }}
                 className="text-xs font-semibold text-brand-purple hover:text-brand-deep"
               >
                 Clear filters
@@ -303,11 +408,13 @@ export default function Add_Meal({
           <div className="mb-2 flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-wider text-brand-slate/55">
               {isSearching
-                ? `${filteredItems.length} result${filteredItems.length !== 1 ? 's' : ''}`
-                : 'Recent Items'}
+                ? `${filteredItems.length} result${filteredItems.length !== 1 ? "s" : ""}`
+                : "Recent Items"}
             </p>
             {isSearching && filteredItems.length === 0 && (
-              <span className="text-xs text-brand-slate/40">No matches found</span>
+              <span className="text-xs text-brand-slate/40">
+                No matches found
+              </span>
             )}
           </div>
 
@@ -315,19 +422,23 @@ export default function Add_Meal({
             {displayItems.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-8 text-center">
                 <span className="text-3xl">🔍</span>
-                <p className="text-sm font-medium text-brand-slate/60">No food items found</p>
-                <p className="text-xs text-brand-slate/40">Try a different search or filter</p>
+                <p className="text-sm font-medium text-brand-slate/60">
+                  No food items found
+                </p>
+                <p className="text-xs text-brand-slate/40">
+                  Try a different search or filter
+                </p>
               </div>
             ) : (
               displayItems.map((item) => {
-                const draft = draftEntries.find((e) => e.item.id === item.id)
+                const draft = draftEntries.find((e) => e.item.id === item.id);
                 return (
                   <div
                     key={item.id}
                     className={`flex items-center justify-between rounded-xl border px-3 py-2.5 transition ${
                       draft
-                        ? 'border-brand-mauve bg-white shadow-sm'
-                        : 'border-transparent bg-white/80 hover:border-brand-pale hover:bg-white'
+                        ? "border-brand-mauve bg-white shadow-sm"
+                        : "border-transparent bg-white/80 hover:border-brand-pale hover:bg-white"
                     }`}
                   >
                     {/* Left: emoji + info */}
@@ -355,10 +466,14 @@ export default function Add_Meal({
                           type="number"
                           min={1}
                           value={draft.grams}
-                          onChange={(e) => setDraftGrams(item.id, Number(e.target.value))}
+                          onChange={(e) =>
+                            setDraftGrams(item.id, Number(e.target.value))
+                          }
                           className="w-16 rounded-lg border border-brand-pale bg-brand-bg px-2 py-1 text-right text-sm font-semibold text-brand-slate focus:border-brand-purple focus:outline-none"
                         />
-                        <span className="text-xs font-semibold text-brand-slate/60">g</span>
+                        <span className="text-xs font-semibold text-brand-slate/60">
+                          g
+                        </span>
                         <button
                           type="button"
                           onClick={() => removeDraftEntry(item.id)}
@@ -379,7 +494,7 @@ export default function Add_Meal({
                       </button>
                     )}
                   </div>
-                )
+                );
               })
             )}
           </div>
@@ -392,7 +507,7 @@ export default function Add_Meal({
               <p className="font-bold text-brand-slate">
                 Macro Preview
                 <span className="ml-2 rounded-full bg-brand-purple px-2 py-0.5 text-[10px] text-white">
-                  {draftEntries.length} item{draftEntries.length > 1 ? 's' : ''}
+                  {draftEntries.length} item{draftEntries.length > 1 ? "s" : ""}
                 </span>
               </p>
               <p className="text-sm font-semibold text-brand-slate/65">
@@ -405,15 +520,21 @@ export default function Add_Meal({
               <div className="flex h-full w-full">
                 <div
                   className="bg-brand-purple transition-all"
-                  style={{ width: `${(macroEnergy.protein / totalMacroEnergy) * 100}%` }}
+                  style={{
+                    width: `${(macroEnergy.protein / totalMacroEnergy) * 100}%`,
+                  }}
                 />
                 <div
                   className="bg-brand-gold transition-all"
-                  style={{ width: `${(macroEnergy.carbs / totalMacroEnergy) * 100}%` }}
+                  style={{
+                    width: `${(macroEnergy.carbs / totalMacroEnergy) * 100}%`,
+                  }}
                 />
                 <div
                   className="bg-brand-mauve transition-all"
-                  style={{ width: `${(macroEnergy.fat / totalMacroEnergy) * 100}%` }}
+                  style={{
+                    width: `${(macroEnergy.fat / totalMacroEnergy) * 100}%`,
+                  }}
                 />
               </div>
             </div>
@@ -458,14 +579,17 @@ export default function Add_Meal({
           variant="gold"
           size="lg"
           onClick={handleAddMeal}
-          disabled={draftEntries.length === 0}
-          className="w-full rounded-2xl text-base font-bold text-white disabled:opacity-50"
+          disabled={draftEntries.length === 0 || !logTarget}
+          className="w-full rounded-2xl text-base font-bold text-black disabled:opacity-50"
         >
           <UtensilsCrossed size={18} />
-          Add to {selectedSection}
+          {logTarget === "planned"
+            ? `Add to Planned ${selectedSection}`
+            : logTarget === "actual"
+              ? `Log Actual ${selectedSection}`
+              : "Select Logging Type"}
         </Button>
-
       </div>
     </Modal>
-  )
+  );
 }
