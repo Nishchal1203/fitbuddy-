@@ -32,25 +32,72 @@ class GoalAIService(CerebrasBaseAIClient):
             },
         }
 
+        ctx = user_context or {}
+        age            = ctx.get("age", "unknown")
+        weight_kg      = ctx.get("weight_kg", "unknown")
+        height_cm      = ctx.get("height_cm", "unknown")
+        experience     = ctx.get("experience_level", "intermediate")
+        current_goals  = ctx.get("current_goals", [])
+        injuries       = ctx.get("injuries", "none")
+
         system_prompt = (
-            "You are an elite goal-setting coach for fitness and wellness. "
-            "Return valid JSON only with keys: summary (string), suggestions (array of strings), recommended_goal (object). "
-            "recommended_goal keys: title, category, current_value, target_value, target_unit, duration_days, description. "
-            "Allowed category values: Fitness, Nutrition, Sleep, Weight."
+            "You are an elite personal trainer and goal-setting coach with 15+ years of experience "
+            "designing SMART goals for athletes and everyday fitness enthusiasts. "
+            "Your job is to transform a user's vague fitness vision into one specific, measurable, "
+            "attainable, relevant, and time-bound (SMART) goal.\n\n"
+
+            "RULES YOU MUST FOLLOW:\n"
+            "1. Return ONLY valid JSON — no prose, no markdown, no explanations outside the JSON.\n"
+            "2. The summary must be 2 sentences: first sentence validates the user's vision warmly, "
+            "second sentence states exactly what the goal will achieve and by when.\n"
+            "3. suggestions must be exactly 4 strings. Each must be a concrete, actionable step "
+            "(not generic advice). Include specific numbers where possible (e.g. '3 sets of 10 squats', "
+            "'drink 500ml water before each meal'). Max 18 words per suggestion.\n"
+            "4. recommended_goal.title must be 2-5 words, specific and motivating.\n"
+            "5. recommended_goal.duration_days must be realistic: weight loss goals 60-120 days, "
+            "strength goals 45-90 days, endurance goals 60-180 days.\n"
+            "6. Set target_value based on evidence-based rates: safe weight loss = 0.5kg/week, "
+            "muscle gain = 0.25kg/week, running improvement = 10% per week.\n"
+            "7. If user has injuries mentioned, reflect that in suggestions — avoid exercises that "
+            "aggravate the injury.\n"
+            "8. category must be exactly one of: Fitness, Nutrition, Sleep, Weight.\n\n"
+
+            "OUTPUT FORMAT:\n"
+            "{\n"
+            '  "summary": "string",\n'
+            '  "suggestions": ["string", "string", "string", "string"],\n'
+            '  "recommended_goal": {\n'
+            '    "title": "string",\n'
+            '    "category": "Fitness|Nutrition|Sleep|Weight",\n'
+            '    "current_value": number,\n'
+            '    "target_value": number,\n'
+            '    "target_unit": "string",\n'
+            '    "duration_days": integer,\n'
+            '    "description": "string (1 sentence, max 20 words)"\n'
+            "  }\n"
+            "}"
         )
 
         user_prompt = (
-            f"Vision prompt: {prompt}\n"
-            f"User context JSON: {json.dumps(user_context or {}, ensure_ascii=True)}\n"
-            "Generate one practical, measurable goal."
+            f"USER VISION: {prompt}\n\n"
+            f"USER PROFILE:\n"
+            f"- Age: {age}\n"
+            f"- Weight: {weight_kg} kg\n"
+            f"- Height: {height_cm} cm\n"
+            f"- Experience level: {experience}\n"
+            f"- Current active goals: {', '.join(current_goals) if current_goals else 'none'}\n"
+            f"- Injuries or limitations: {injuries}\n\n"
+            "Based on the user's vision and profile above, generate ONE specific, measurable, "
+            "realistic goal. Make the suggestions directly actionable — not generic platitudes. "
+            "The goal should complement (not duplicate) their existing goals if any."
         )
 
         result = self.chat_json(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             fallback=fallback,
-            max_tokens=600,
-            temperature=0.3,
+            max_tokens=700,
+            temperature=0.25,
         )
 
         if not isinstance(result.get("suggestions"), list):
@@ -79,13 +126,13 @@ class GoalAIService(CerebrasBaseAIClient):
             category = fallback["category"]
 
         return {
-            "title": str(raw.get("title") or fallback["title"]).strip() or fallback["title"],
-            "category": category,
+            "title":         str(raw.get("title") or fallback["title"]).strip() or fallback["title"],
+            "category":      category,
             "current_value": round(max(0, self.to_float(raw.get("current_value"), fallback["current_value"])), 2),
-            "target_value": round(max(1, self.to_float(raw.get("target_value"), fallback["target_value"])), 2),
-            "target_unit": str(raw.get("target_unit") or fallback["target_unit"]).strip() or fallback["target_unit"],
+            "target_value":  round(max(1, self.to_float(raw.get("target_value"),  fallback["target_value"])),  2),
+            "target_unit":   str(raw.get("target_unit") or fallback["target_unit"]).strip() or fallback["target_unit"],
             "duration_days": int(max(7, min(365, self.to_float(raw.get("duration_days"), fallback["duration_days"])))),
-            "description": str(raw.get("description") or fallback["description"]).strip() or fallback["description"],
+            "description":   str(raw.get("description") or fallback["description"]).strip() or fallback["description"],
         }
 
 

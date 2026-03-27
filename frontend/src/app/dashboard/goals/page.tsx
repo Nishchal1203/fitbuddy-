@@ -4,10 +4,16 @@ import React, { useState } from "react";
 import GoalsDashboard from "@/components/goals/GoalsDashboard";
 import FloatingAiButton from "@/components/goals/FloatingAiButton";
 import AIGoalAssistant from "@/components/diet-plan/AI_chat";
-import type { ActiveGoal, GoalLabel } from "@/components/goals/types";
+import type { ActiveGoal } from "@/components/goals/types";
 import { useToast } from "@/components/ui";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE_URL, buildAuthHeaders, getAuthToken, readErrorMessage } from "@/Utils/api";
+import {
+  buildGoalDescription,
+  defaultUnitByCategory,
+  inferFollowSteps,
+  normalizeGoalCategory,
+  toDueLabel,
+} from "@/components/goals/goalMeta";
 
 type GoalApplyPayload = {
   title?: string;
@@ -18,45 +24,8 @@ type GoalApplyPayload = {
   unit?: string;
   duration_days?: number;
   description?: string;
+  ai_suggestions?: string[];
 };
-
-function getAccessToken() {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("access_token");
-}
-
-function buildAuthHeaders(extra?: Record<string, string>) {
-  const token = getAccessToken();
-  return {
-    ...(extra || {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
-
-function normalizeGoalCategory(input?: string): GoalLabel {
-  const lower = String(input || "").toLowerCase();
-  if (lower.includes("nutri") || lower.includes("diet")) return "Nutrition";
-  if (lower.includes("sleep") || lower.includes("rest")) return "Sleep";
-  if (lower.includes("weight") || lower.includes("fat") || lower.includes("bulk")) return "Weight";
-  return "Fitness";
-}
-
-function defaultUnitByCategory(category: GoalLabel): string {
-  if (category === "Nutrition") return "g";
-  if (category === "Sleep") return "hrs avg";
-  if (category === "Weight") return "kg";
-  return "km";
-}
-
-function toDueLabel(targetDate: string) {
-  const parsed = new Date(targetDate);
-  if (Number.isNaN(parsed.getTime())) return "Ongoing";
-  return parsed.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 export default function GoalsPage() {
   const { showToast } = useToast();
@@ -76,32 +45,56 @@ export default function GoalsPage() {
       .toISOString()
       .slice(0, 10);
     const description = String(payload.description || `AI vision goal for ${category.toLowerCase()} improvement.`);
+    const steps = Array.isArray(payload.ai_suggestions)
+      ? payload.ai_suggestions.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+      : inferFollowSteps(category, title);
 
     let goalId = Date.now();
-    const token = getAccessToken();
+    const token = getAuthToken();
 
-    if (token) {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/goals/`, {
-          method: "POST",
-          headers: buildAuthHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify({
-            title,
-            description,
-            target_date: targetDate,
-            is_completed: false,
+    if (!token) {
+      showToast({
+        title: "Not authenticated",
+        description: "Please login again before creating goals.",
+        variant: "error",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/goals/`, {
+        method: "POST",
+        headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          title,
+          description: buildGoalDescription(description, {
+            category,
+            currentValue,
+            targetValue,
+            unit,
+            steps,
           }),
-        });
+          target_date: targetDate,
+          is_completed: false,
+        }),
+      });
 
-        if (response.ok) {
-          const created = (await response.json()) as { id?: number };
-          if (typeof created.id === "number") {
-            goalId = created.id;
-          }
-        }
-      } catch {
-        // Keep local fallback goal creation when API fails.
+      if (!response.ok) {
+        const message = await readErrorMessage(response, "Failed to save goal.");
+        throw new Error(message);
       }
+
+      const created = (await response.json()) as { id?: number };
+      if (typeof created.id === "number") {
+        goalId = created.id;
+      }
+    } catch (error) {
+      showToast({
+        title: "Goal save failed",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "error",
+      });
+      return;
     }
 
     const progress = Math.max(0, Math.min(100, Math.round((currentValue / targetValue) * 100)));
@@ -115,6 +108,9 @@ export default function GoalsPage() {
       targetValue,
       unit,
       dueLabel: toDueLabel(targetDate),
+      description,
+      targetDate,
+      steps,
     });
 
     setIsAIAssistantOpen(false);

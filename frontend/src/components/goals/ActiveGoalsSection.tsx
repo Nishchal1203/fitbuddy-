@@ -10,6 +10,9 @@ type ActiveGoalsSectionProps = {
   goals: ActiveGoal[];
   activeCategory: GoalCategory;
   onMarkComplete: (goal: ActiveGoal) => void;
+  onOpenDetails: (goal: ActiveGoal) => void;
+  onEditGoal: (goal: ActiveGoal) => void;
+  onDeleteGoal: (goal: ActiveGoal) => void;
   onAddGoal: () => void;
 };
 
@@ -17,6 +20,9 @@ export default function ActiveGoalsSection({
   goals,
   activeCategory,
   onMarkComplete,
+  onOpenDetails,
+  onEditGoal,
+  onDeleteGoal,
   onAddGoal,
 }: ActiveGoalsSectionProps) {
   return (
@@ -34,6 +40,9 @@ export default function ActiveGoalsSection({
             key={goal.id}
             goal={goal}
             onMarkComplete={onMarkComplete}
+            onOpenDetails={onOpenDetails}
+            onEditGoal={onEditGoal}
+            onDeleteGoal={onDeleteGoal}
           />
         ))}
 

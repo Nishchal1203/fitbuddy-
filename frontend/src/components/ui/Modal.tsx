@@ -11,6 +11,7 @@ type ModalProps = {
   onClose: () => void;
   children: React.ReactNode;
   className?: string;
+  hideHeader?: boolean;
 };
 
 export function Modal({
@@ -19,6 +20,7 @@ export function Modal({
   onClose,
   children,
   className,
+  hideHeader = false,
 }: ModalProps) {
   if (!isOpen) return null;
 
@@ -30,19 +32,21 @@ export function Modal({
           className,
         )}
       >
-        <div className="flex items-center justify-between border-b border-brand-pale p-4">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            aria-label="Close modal"
-          >
-            <X size={18} />
-          </Button>
-        </div>
-        <div className="max-h-[78vh] overflow-y-auto p-4">{children}</div>
+        {!hideHeader && (
+          <div className="flex items-center justify-between border-b border-brand-pale p-4">
+            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              aria-label="Close modal"
+            >
+              <X size={18} />
+            </Button>
+          </div>
+        )}
+        <div className={hideHeader ? "" : "max-h-[78vh] overflow-y-auto p-4"}>{children}</div>
       </div>
     </div>
   );

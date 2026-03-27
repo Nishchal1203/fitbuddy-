@@ -201,6 +201,7 @@ def create_ai_workout_draft(
     generated_exercises = ai_result.get("exercises")
     if not isinstance(generated_exercises, list) or len(generated_exercises) == 0:
         generated_exercises = _generate_ai_draft_exercises(payload.ai_prompt, payload.level)
+    generated_exercises = _normalize_exercises_for_response(generated_exercises)
 
     title = payload.title or str(ai_result.get("title") or "AI Workout Plan")
     if not title.strip():

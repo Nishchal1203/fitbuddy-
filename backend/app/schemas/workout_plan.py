@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class PlanExerciseItem(BaseModel):
@@ -8,12 +8,19 @@ class PlanExerciseItem(BaseModel):
     category: str
     sets: int | str | None = None
     reps: int | str | None = None
-    rest: str | None = None
+    rest: int | str | None = None
     time: int | str | None = None
     duration: int | str | None = None
     duration_minutes: int | None = None
     notes: str | None = None
     instructions: str | None = None
+
+    @field_validator("rest", mode="before")
+    @classmethod
+    def coerce_rest_to_string(cls, value: object) -> object:
+        if value is None or isinstance(value, str):
+            return value
+        return str(value)
 
 
 class WorkoutPlanRead(BaseModel):

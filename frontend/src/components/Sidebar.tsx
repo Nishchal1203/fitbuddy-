@@ -42,7 +42,7 @@ export default function Sidebar({
   ];
 
   return (
-    <aside className="relative flex h-full min-h-0 flex-col border-r border-gray-200 bg-white pt-4">
+    <aside className="relative flex h-full min-h-0 flex-col overflow-visible border-r border-gray-200 bg-white pt-4">
       {/* Sidebar brand removed since logo/title already exists in top navbar */}
       {/* {!isCollapsed && (
         <div className="px-5 pb-2">
@@ -68,7 +68,7 @@ export default function Sidebar({
         />
       </button>
 
-      <nav className={`flex-1 ${isCollapsed ? "px-2 pt-2" : "px-3 pt-3"}`}>
+      <nav className={`flex-1 overflow-y-auto ${isCollapsed ? "px-2 pt-2" : "px-3 pt-3"}`}>
         <ul className="space-y-1">
           {navItems.map(({ href, label, icon: Icon, imageIcon }) => {
             const isActive = activePath === href;
