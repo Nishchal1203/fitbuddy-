@@ -105,6 +105,8 @@ services:
       context: .
       dockerfile: backend/celery_worker/Dockerfile
     container_name: fitbuddy_celery_worker
+    env_file:
+      - ./backend/.env
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:root123@db:5432/postgres
       RABBITMQ_URL: amqp://fitbuddy:fitbuddy123@rabbitmq:5672/
@@ -127,6 +129,8 @@ services:
       context: .
       dockerfile: backend/celery_worker/Dockerfile.beat
     container_name: fitbuddy_celery_beat
+    env_file:
+      - ./backend/.env
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:root123@db:5432/postgres
       RABBITMQ_URL: amqp://fitbuddy:fitbuddy123@rabbitmq:5672/

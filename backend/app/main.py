@@ -13,6 +13,7 @@ from app.api.routes import progress as progress_routes
 from app.api.routes import health as health_routes
 from app.api.routes import reports as reports_routes
 from app.api.routes import nutrition as nutrition_routes
+from app.api.routes import trainer_chat as trainer_chat_routes
 from app.services.system_seed_service import ensure_default_seed_data
 import app.db.base  # noqa: F401  # ensure models are imported
 
@@ -88,3 +89,4 @@ app.include_router(workout_plans_routes.router, prefix="/api")
 app.include_router(health_routes.router, prefix="/api")
 app.include_router(reports_routes.router, prefix="/api")
 app.include_router(nutrition_routes.router, prefix="/api")
+app.include_router(trainer_chat_routes.router, prefix="/api")

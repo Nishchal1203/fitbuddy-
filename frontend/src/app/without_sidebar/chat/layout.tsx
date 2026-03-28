@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import ChatProviders from "./providers";
 
 export const metadata: Metadata = {
   title: "AI Trainer · FitBuddy",
@@ -16,6 +17,8 @@ export default function ChatLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="h-dvh w-full overflow-hidden bg-brand-bg">{children}</div>
+    <ChatProviders>
+      <div className="h-dvh w-full overflow-hidden bg-brand-bg">{children}</div>
+    </ChatProviders>
   );
 }

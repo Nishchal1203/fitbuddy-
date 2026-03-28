@@ -19,6 +19,9 @@ if TYPE_CHECKING:
 		AICoachInsight,
 		AIDietPlan,
 	)
+	from app.models.trainer_chat import (
+		TrainerChatConversation,
+	)
 
 
 class User(Base):
@@ -42,3 +45,7 @@ class User(Base):
 	nutrition_goal: Mapped[NutritionGoal | None] = relationship(back_populates="owner", uselist=False, cascade="all, delete-orphan")
 	coach_insights: Mapped[list[AICoachInsight]] = relationship(back_populates="owner", cascade="all, delete-orphan")
 	ai_diet_plans: Mapped[list[AIDietPlan]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+	trainer_chat_conversations: Mapped[list[TrainerChatConversation]] = relationship(
+		back_populates="owner",
+		cascade="all, delete-orphan",
+	)
