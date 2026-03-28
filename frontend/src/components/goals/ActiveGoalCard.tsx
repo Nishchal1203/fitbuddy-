@@ -10,17 +10,26 @@ import ProgressRing from "./ProgressRing";
 type ActiveGoalCardProps = {
   goal: ActiveGoal;
   onMarkComplete: (goal: ActiveGoal) => void;
+  onOpenDetails: (goal: ActiveGoal) => void;
+  onEditGoal: (goal: ActiveGoal) => void;
+  onDeleteGoal: (goal: ActiveGoal) => void;
 };
 
 export default function ActiveGoalCard({
   goal,
   onMarkComplete,
+  onOpenDetails,
+  onEditGoal,
+  onDeleteGoal,
 }: ActiveGoalCardProps) {
   const ringColor = RING_STROKE[goal.category];
   const badgeCls = CATEGORY_COLOR[goal.category];
 
   return (
-    <Card className="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-[0_4px_20px_-4px_#9567B920]">
+    <Card
+      className="flex cursor-pointer flex-col gap-4 rounded-2xl bg-white p-5 shadow-[0_4px_20px_-4px_#9567B920] transition hover:shadow-[0_8px_24px_-8px_#9567B940]"
+      onClick={() => onOpenDetails(goal)}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="space-y-1">
           <span
@@ -36,12 +45,20 @@ export default function ActiveGoalCard({
           <button
             className="rounded-lg p-1.5 text-brand-slate/40 transition-colors hover:bg-brand-bg hover:text-brand-purple"
             aria-label="Edit goal"
+            onClick={(event) => {
+              event.stopPropagation();
+              onEditGoal(goal);
+            }}
           >
             <Pencil size={14} />
           </button>
           <button
             className="rounded-lg p-1.5 text-brand-slate/40 transition-colors hover:bg-red-50 hover:text-red-400"
             aria-label="Delete goal"
+            onClick={(event) => {
+              event.stopPropagation();
+              onDeleteGoal(goal);
+            }}
           >
             <Trash2 size={14} />
           </button>
@@ -69,12 +86,17 @@ export default function ActiveGoalCard({
         </span>
       </div>
 
+      <p className="text-xs text-brand-slate/45">Click card to view plan details and follow steps.</p>
+
       <Button
         type="button"
         size="sm"
         variant="secondary"
         className="w-full rounded-xl"
-        onClick={() => onMarkComplete(goal)}
+        onClick={(event) => {
+          event.stopPropagation();
+          onMarkComplete(goal);
+        }}
       >
         <Check size={14} />
         Mark as complete

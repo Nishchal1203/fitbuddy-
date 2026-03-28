@@ -1,152 +1,216 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ChatSidebar, ChatMessages, ChatInput } from "@/components/chat";
 import type { Conversation, Message } from "@/components/chat";
-import Collapser from "@/assets/Collapser.svg";
-import Image from "next/image";
-import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui";
 import Navbar from "@/components/Navbar";
-/* ─────────────────────────────────────────────
-   MOCK REPLIES  (replace with real API later)
-───────────────────────────────────────────── */
-const MOCK_REPLIES: Record<string, string> = {
-  default: `Great question! Here's what I recommend based on your fitness profile:
+import {
+  createConversation,
+  deleteConversation,
+  fetchConversation,
+  fetchConversations,
+  pollMessageStatus,
+  sendMessage as sendMessageRequest,
+  updateConversation,
+  updateMessageFeedback,
+  type ChatApiConversation,
+  type ChatApiMessage,
+} from "@/Utils/trainerChatApi";
 
-**Key Points:**
-• Focus on progressive overload — increase weight or reps every 1–2 weeks
-• Compound movements (squat, deadlift, bench, row) should be your foundation
-• Aim for 7–9 hours of sleep — this is when your muscles actually grow
-• Protein intake: 1.6–2.2g per kg of bodyweight daily
-
-Want me to go deeper on any of these? I can also build you a personalised plan. 💪`,
-
-  form: `**Squat Form Checklist ✅**
-
-**Setup:**
-• Feet shoulder-width apart, toes slightly out (15–30°)
-• Bar on upper traps (high bar) or rear delts (low bar)
-• Core braced like you're about to take a punch
-
-**The Descent:**
-• Hinge hips back first, then bend knees
-• Knees track over toes — don't cave inward
-• Chest tall, spine neutral throughout
-
-**Common mistakes I see most:**
-1. Butt wink (pelvis tucks under at the bottom)
-2. Heels rising — may need ankle mobility work
-3. Forward lean — check hip flexor tightness`,
-
-  diet: `**Pre & Post Workout Nutrition 🍽️**
-
-**Pre-Workout (1–2 hrs before):**
-• Complex carbs: oats, rice, sweet potato
-• Moderate protein: chicken, Greek yogurt, eggs
-• Example: 100g oats + 30g whey + banana
-
-**Post-Workout (within 30–60 mins):**
-• Fast carbs: white rice, potato, fruit
-• High protein: 30–40g to maximise muscle protein synthesis
-• Example: rice + chicken breast + veggies
-
-**The real truth:** Total daily intake matters more than timing. Hit your protein goal first. 📊`,
-};
-
-function getMockReply(prompt: string): string {
-  const lower = prompt.toLowerCase();
-  if (
-    lower.includes("squat") ||
-    lower.includes("form") ||
-    lower.includes("deadlift")
-  )
-    return MOCK_REPLIES.form;
-  if (
-    lower.includes("eat") ||
-    lower.includes("diet") ||
-    lower.includes("protein") ||
-    lower.includes("macro")
-  )
-    return MOCK_REPLIES.diet;
-  return MOCK_REPLIES.default;
+function toUiMessage(message: ChatApiMessage): Message {
+  return {
+    id: String(message.id),
+    role: message.role,
+    text: message.text,
+    image: message.image_data ?? undefined,
+    liked: message.liked,
+    timestamp: new Date(message.created_at),
+  };
 }
 
-/* ─────────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────────── */
-function genId() {
-  return Math.random().toString(36).slice(2, 10);
+function toUiConversation(item: ChatApiConversation, messages: Message[] = []): Conversation {
+  return {
+    id: String(item.id),
+    title: item.title,
+    preview: item.preview,
+    pinned: item.pinned,
+    timestamp: new Date(item.updated_at),
+    messages,
+  };
 }
 
-function buildTitle(text: string): string {
-  return text.length > 40 ? text.slice(0, 40).trim() + "…" : text;
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function buildPreview(text: string): string {
-  return (
-    text.replace(/\*\*/g, "").slice(0, 60).trim() +
-    (text.length > 60 ? "…" : "")
-  );
+function toBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error("Failed to read image file"));
+    reader.readAsDataURL(file);
+  });
 }
 
 /* ─────────────────────────────────────────────
    PAGE
 ───────────────────────────────────────────── */
 export default function ChatPage() {
+  const { showToast } = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<
     string | null
   >(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [input, setInput] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageData, setImageData] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  /* ── active conversation messages ── */
-  const activeConversation =
-    conversations.find((c) => c.id === activeConversationId) ?? null;
+  const activeConversation = useMemo(
+    () => conversations.find((c) => c.id === activeConversationId) ?? null,
+    [conversations, activeConversationId],
+  );
   const messages = activeConversation?.messages ?? [];
 
-  /* ── new chat ── */
-  const handleNewChat = useCallback(() => {
-    setActiveConversationId(null);
-    setInput("");
-    setImagePreview(null);
+  const upsertConversation = useCallback((incoming: Conversation) => {
+    setConversations((prev) => {
+      const existing = prev.find((c) => c.id === incoming.id);
+      if (!existing) return [incoming, ...prev];
+      const merged: Conversation = {
+        ...incoming,
+        messages: incoming.messages.length > 0 ? incoming.messages : existing.messages,
+      };
+      return [merged, ...prev.filter((c) => c.id !== incoming.id)];
+    });
   }, []);
+
+  const loadConversations = useCallback(
+    async (q: string) => {
+      const rows = await fetchConversations(q);
+      setConversations((prev) => {
+        const prevMap = new Map(prev.map((c) => [c.id, c]));
+        return rows.map((row) => {
+          const id = String(row.id);
+          return toUiConversation(row, prevMap.get(id)?.messages ?? []);
+        });
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    let isActive = true;
+    const timer = setTimeout(async () => {
+      try {
+        await loadConversations(searchTerm);
+      } catch (error) {
+        if (isActive) {
+          setErrorMessage((error as Error).message || "Failed to load chat history");
+        }
+      }
+    }, 250);
+
+    return () => {
+      isActive = false;
+      clearTimeout(timer);
+    };
+  }, [searchTerm, loadConversations]);
+
+  /* ── new chat ── */
+  const handleNewChat = useCallback(async () => {
+    try {
+      setErrorMessage(null);
+      setInput("");
+      setImagePreview(null);
+      setImageData(null);
+
+      const created = await createConversation();
+      const newId = String(created.id);
+      upsertConversation(toUiConversation(created, []));
+      setActiveConversationId(newId);
+    } catch (error) {
+      setActiveConversationId(null);
+      setErrorMessage((error as Error).message || "Failed to start new chat");
+    }
+  }, [upsertConversation]);
 
   /* ── select conversation ── */
-  const handleSelectConversation = useCallback((id: string) => {
-    setActiveConversationId(id);
-    setInput("");
-    setImagePreview(null);
-  }, []);
+  const handleSelectConversation = useCallback(
+    async (id: string) => {
+      try {
+        setErrorMessage(null);
+        setActiveConversationId(id);
+        setInput("");
+        setImagePreview(null);
+        setImageData(null);
+
+        const detail = await fetchConversation(id);
+        upsertConversation(
+          toUiConversation(detail, detail.messages.map(toUiMessage)),
+        );
+      } catch (error) {
+        setErrorMessage((error as Error).message || "Failed to open conversation");
+      }
+    },
+    [upsertConversation],
+  );
 
   /* ── delete conversation ── */
-  const handleDeleteConversation = useCallback((id: string) => {
-    setConversations((prev) => prev.filter((c) => c.id !== id));
-    setActiveConversationId((curr) => (curr === id ? null : curr));
-  }, []);
+  const handleDeleteConversation = useCallback(
+    async (id: string) => {
+      try {
+        const deletedConversation = conversations.find((c) => c.id === id);
+        await deleteConversation(id);
+        setConversations((prev) => prev.filter((c) => c.id !== id));
+        setActiveConversationId((curr) => (curr === id ? null : curr));
+        showToast({
+          title: "Chat history deleted",
+          description: deletedConversation
+            ? `Deleted: ${deletedConversation.title}`
+            : "The selected chat has been removed.",
+          variant: "success",
+        });
+      } catch (error) {
+        setErrorMessage((error as Error).message || "Failed to delete conversation");
+      }
+    },
+    [conversations, showToast],
+  );
 
   /* ── pin conversation ── */
-  const handlePinConversation = useCallback((id: string) => {
-    setConversations((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)),
-    );
-  }, []);
+  const handlePinConversation = useCallback(
+    async (id: string) => {
+      const conversation = conversations.find((item) => item.id === id);
+      if (!conversation) return;
 
-  /* ── clear current chat ── */
-  const handleClearChat = useCallback(() => {
-    if (!activeConversationId) return;
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id === activeConversationId ? { ...c, messages: [] } : c,
-      ),
-    );
-  }, [activeConversationId]);
+      const nextPinned = !conversation.pinned;
+      setConversations((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, pinned: nextPinned } : c)),
+      );
+
+      try {
+        const updated = await updateConversation(id, { pinned: nextPinned });
+        upsertConversation(
+          toUiConversation(updated, conversation.messages),
+        );
+      } catch (error) {
+        setConversations((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, pinned: !nextPinned } : c)),
+        );
+        setErrorMessage((error as Error).message || "Failed to update conversation");
+      }
+    },
+    [conversations, upsertConversation],
+  );
 
   /* ── like / dislike ── */
   const handleLike = useCallback(
-    (msgId: string) => {
+    async (msgId: string) => {
+      const next = messages.find((m) => m.id === msgId)?.liked === true ? null : true;
       setConversations((prev) =>
         prev.map((c) =>
           c.id !== activeConversationId
@@ -154,19 +218,24 @@ export default function ChatPage() {
             : {
                 ...c,
                 messages: c.messages.map((m) =>
-                  m.id === msgId
-                    ? { ...m, liked: m.liked === true ? null : true }
-                    : m,
+                  m.id === msgId ? { ...m, liked: next } : m,
                 ),
               },
         ),
       );
+
+      try {
+        await updateMessageFeedback(msgId, next);
+      } catch (error) {
+        setErrorMessage((error as Error).message || "Failed to save feedback");
+      }
     },
-    [activeConversationId],
+    [activeConversationId, messages],
   );
 
   const handleDislike = useCallback(
-    (msgId: string) => {
+    async (msgId: string) => {
+      const next = messages.find((m) => m.id === msgId)?.liked === false ? null : false;
       setConversations((prev) =>
         prev.map((c) =>
           c.id !== activeConversationId
@@ -174,143 +243,146 @@ export default function ChatPage() {
             : {
                 ...c,
                 messages: c.messages.map((m) =>
-                  m.id === msgId
-                    ? { ...m, liked: m.liked === false ? null : false }
-                    : m,
+                  m.id === msgId ? { ...m, liked: next } : m,
                 ),
               },
         ),
       );
+
+      try {
+        await updateMessageFeedback(msgId, next);
+      } catch (error) {
+        setErrorMessage((error as Error).message || "Failed to save feedback");
+      }
     },
-    [activeConversationId],
+    [activeConversationId, messages],
   );
 
   /* ── image upload ── */
-  const handleImageChange = useCallback((file: File) => {
-    setImagePreview(URL.createObjectURL(file));
+  const handleImageChange = useCallback(async (file: File) => {
+    try {
+      const [previewUrl, encoded] = await Promise.all([
+        Promise.resolve(URL.createObjectURL(file)),
+        toBase64(file),
+      ]);
+      setImagePreview(previewUrl);
+      setImageData(encoded);
+      setErrorMessage(null);
+    } catch {
+      setErrorMessage("Failed to process selected image");
+    }
   }, []);
 
   /* ── send message ── */
   const sendMessage = useCallback(
     async (overrideText?: string) => {
       const text = (overrideText ?? input).trim();
-      if (!text && !imagePreview) return;
+      if (!text && !imageData) return;
 
-      const userMsg: Message = {
-        id: genId(),
-        role: "user",
-        text,
-        image: imagePreview ?? undefined,
-        timestamp: new Date(),
-      };
+      try {
+        setErrorMessage(null);
 
-      setInput("");
-      setImagePreview(null);
+        let conversationId = activeConversationId;
+        if (!conversationId) {
+          const created = await createConversation();
+          conversationId = String(created.id);
+          setActiveConversationId(conversationId);
+          upsertConversation(toUiConversation(created, []));
+        }
 
-      /* create new conversation if none active */
-      let convId = activeConversationId;
-      if (!convId) {
-        const newConv: Conversation = {
-          id: genId(),
-          title: buildTitle(text),
-          preview: buildPreview(text),
-          timestamp: new Date(),
-          messages: [userMsg],
-        };
-        setConversations((prev) => [newConv, ...prev]);
-        setActiveConversationId(newConv.id);
-        convId = newConv.id;
-      } else {
+        if (!conversationId) return;
+
+        const response = await sendMessageRequest({
+          conversationId,
+          text: text || "Analyze the attached image.",
+          imageData,
+        });
+
+        const userMessage = toUiMessage(response.user_message);
+        setInput("");
+        setImagePreview(null);
+        setImageData(null);
+
         setConversations((prev) =>
           prev.map((c) =>
-            c.id !== convId
+            c.id !== conversationId
               ? c
               : {
                   ...c,
-                  messages: [...c.messages, userMsg],
-                  preview: buildPreview(text),
-                  timestamp: new Date(),
+                  preview: userMessage.text.slice(0, 80),
+                  timestamp: userMessage.timestamp,
+                  messages: [...c.messages, userMessage],
                 },
           ),
         );
+
+        setIsTyping(true);
+        const startedAt = Date.now();
+        while (Date.now() - startedAt < 60_000) {
+          await sleep(1500);
+          const status = await pollMessageStatus(conversationId, response.request.request_id);
+          if (status.status === "completed" && status.assistant_message) {
+            const assistant = toUiMessage(status.assistant_message);
+            setConversations((prev) =>
+              prev.map((c) =>
+                c.id !== conversationId
+                  ? c
+                  : {
+                      ...c,
+                      preview: assistant.text.slice(0, 80),
+                      timestamp: assistant.timestamp,
+                      messages: [...c.messages, assistant],
+                    },
+              ),
+            );
+            break;
+          }
+
+          if (status.status === "failed") {
+            throw new Error(status.error_text || "AI response generation failed");
+          }
+        }
+
+        await loadConversations(searchTerm);
+      } catch (error) {
+        setErrorMessage((error as Error).message || "Failed to send message");
+      } finally {
+        setIsTyping(false);
       }
-
-      /* simulate AI response */
-      setIsTyping(true);
-      await new Promise((r) => setTimeout(r, 1400 + Math.random() * 800));
-      setIsTyping(false);
-
-      const aiReply = getMockReply(text);
-      const aiMsg: Message = {
-        id: genId(),
-        role: "assistant",
-        text: aiReply,
-        timestamp: new Date(),
-        liked: null,
-      };
-
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.id !== convId
-            ? c
-            : {
-                ...c,
-                messages: [...c.messages, aiMsg],
-                preview: buildPreview(aiReply),
-                timestamp: new Date(),
-              },
-        ),
-      );
     },
-    [input, imagePreview, activeConversationId],
+    [
+      activeConversationId,
+      imageData,
+      input,
+      loadConversations,
+      searchTerm,
+      upsertConversation,
+    ],
   );
 
   /* ─────────────────────────────────────────────
      RENDER
   ───────────────────────────────────────────── */
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex h-dvh flex-col overflow-hidden">
       <Navbar />
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      <div className="flex h-[calc(100dvh-4rem)] min-h-0 overflow-hidden">
         {/* ── Sidebar ── */}
-        {sidebarOpen && (
-          <ChatSidebar
-            conversations={conversations}
-            activeConversationId={activeConversationId}
-            onSelectConversation={handleSelectConversation}
-            onNewChat={handleNewChat}
-            onDeleteConversation={handleDeleteConversation}
-            onPinConversation={handlePinConversation}
-            onToggleSidebar={() => setSidebarOpen(false)}
-            isOpen={sidebarOpen}
-          />
-        )}
-        {!sidebarOpen && (
-          <div className="border-b border-brand-pale bg-white px-4 py-3">
-            <Button
-              onClick={() => setSidebarOpen(true)}
-              title="Open sidebar"
-              //className="flex h-7 w-7 items-center justify-center rounded-lg border border-brand-pale bg-white text-brand-slate/45 transition hover:border-brand-mauve hover:text-brand-purple"
-            >
-              <Image
-                src={Collapser}
-                alt="open sidebar"
-                width={18}
-                height={18}
-              />
-            </Button>
-          </div>
-        )}
+        <ChatSidebar
+          conversations={conversations}
+          activeConversationId={activeConversationId}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onSelectConversation={handleSelectConversation}
+          onNewChat={handleNewChat}
+          onDeleteConversation={handleDeleteConversation}
+          onPinConversation={handlePinConversation}
+          onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
+          isOpen={sidebarOpen}
+        />
 
         {/* ── Main chat area ── */}
         <div className="flex min-w-xl flex-1 flex-col overflow-hidden">
-          {/* <ChatHeader
-          hasMessages={messages.length > 0}
-          sidebarOpen={sidebarOpen}
-          onClearChat={handleClearChat}
-          onToggleSidebar={() => setSidebarOpen((v) => !v)}
-        /> */}
-
           <ChatMessages
             messages={messages}
             isTyping={isTyping}
@@ -318,6 +390,12 @@ export default function ChatPage() {
             onDislike={handleDislike}
             onTopicClick={sendMessage}
           />
+
+          {errorMessage && (
+            <div className="border-t border-brand-pale bg-red-50 px-4 py-2 text-xs text-red-600">
+              {errorMessage}
+            </div>
+          )}
 
           <ChatInput
             input={input}

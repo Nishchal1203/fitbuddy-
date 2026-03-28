@@ -40,31 +40,33 @@ export default function ChatMessages({
   const isEmpty = messages.length === 0 && !isTyping;
 
   return (
-    <div
-      ref={scrollRef}
-      onScroll={handleScroll}
-      className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-brand-bg"
-    >
-      {isEmpty ? (
-        <EmptyState onTopicClick={onTopicClick} />
-      ) : (
-        <div className="mx-auto max-w-3xl space-y-5 py-6">
-          {messages.map((msg) => (
-            <MessageBubble
-              key={msg.id}
-              message={msg}
-              onLike={onLike}
-              onDislike={onDislike}
-            />
-          ))}
-          {isTyping && (
-            <div className="px-4">
-              <TypingIndicator />
-            </div>
-          )}
-          <div ref={bottomRef} />
-        </div>
-      )}
+    <div className="relative min-h-0 flex-1 overflow-hidden bg-brand-bg">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="h-full overflow-y-auto overflow-x-hidden"
+      >
+        {isEmpty ? (
+          <EmptyState onTopicClick={onTopicClick} />
+        ) : (
+          <div className="mx-auto w-full max-w-5xl space-y-6 px-3 py-6 sm:px-4 md:px-6 md:py-8">
+            {messages.map((msg) => (
+              <MessageBubble
+                key={msg.id}
+                message={msg}
+                onLike={onLike}
+                onDislike={onDislike}
+              />
+            ))}
+            {isTyping && (
+              <div className="px-4">
+                <TypingIndicator />
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+        )}
+      </div>
 
       {/* scroll-to-bottom pill */}
       {showBtn && (
@@ -72,7 +74,7 @@ export default function ChatMessages({
           onClick={() =>
             bottomRef.current?.scrollIntoView({ behavior: "smooth" })
           }
-          className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-brand-pale bg-white px-4 py-2 text-xs font-semibold text-brand-slate shadow-lg transition hover:border-brand-purple hover:text-brand-purple"
+          className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-brand-pale bg-white px-4 py-2 text-xs font-semibold text-brand-slate shadow-lg transition hover:border-brand-purple hover:text-brand-purple"
         >
           <ChevronDown size={13} />
           Scroll to latest

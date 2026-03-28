@@ -2,6 +2,8 @@ from celery import Celery
 import os
 from kombu import Queue
 
+import app.db.base  # noqa: F401  # ensure all models are imported before task execution
+
 # Celery configuration
 CELERY_BROKER_URL = os.getenv("RABBITMQ_URL", "amqp://fitbuddy:fitbuddy123@rabbitmq:5672/")
 CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -16,7 +18,8 @@ celery_app = Celery(
         "celery_worker.tasks.progress_tasks", 
         "celery_worker.tasks.report_tasks",
         "celery_worker.tasks.goal_tasks",
-        "celery_worker.tasks.batch_tasks"
+        "celery_worker.tasks.batch_tasks",
+        "celery_worker.tasks.trainer_chat_tasks",
     ]
 )
 
@@ -29,6 +32,7 @@ celery_app.conf.update(
         'celery_worker.tasks.report_tasks.*': {'queue': 'report.generation.queue'},
         'celery_worker.tasks.goal_tasks.*': {'queue': 'goal.reminder.queue'},
         'celery_worker.tasks.batch_tasks.*': {'queue': 'batch.processing.queue'},
+        'celery_worker.tasks.trainer_chat_tasks.*': {'queue': 'trainer.chat.queue'},
     },
     
     # Queue configuration
@@ -39,6 +43,7 @@ celery_app.conf.update(
         Queue('report.generation.queue', routing_key='report.generation.*'),
         Queue('goal.reminder.queue', routing_key='goal.reminder.*'),
         Queue('batch.processing.queue', routing_key='batch.processing.*'),
+        Queue('trainer.chat.queue', routing_key='trainer.chat.*'),
         Queue('default'),
     ),
     

@@ -14,3 +14,8 @@ from app.models.nutrition import (  # noqa: F401
 	AICoachInsight,
 	AIDietPlan,
 )
+from app.models.trainer_chat import (  # noqa: F401
+	TrainerChatConversation,
+	TrainerChatMessage,
+	TrainerChatMessageRequest,
+)

@@ -1,13 +1,16 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { Button, Input, Modal, Select } from "@/components/ui";
-import type { ActiveGoal, GoalLabel } from "./types";
+import React, { useEffect, useMemo, useState } from "react";
+import { Button, Input, Modal, Select, Textarea } from "@/components/ui";
+import type { ActiveGoal, GoalFormValues, GoalLabel } from "./types";
+import { defaultUnitByCategory, toDueLabel, toProgress } from "./goalMeta";
 
 type AddGoalModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onCreateGoal: (goal: ActiveGoal) => void;
+  onSubmitGoal: (goal: GoalFormValues) => Promise<void> | void;
+  initialGoal?: ActiveGoal | null;
+  isSubmitting?: boolean;
 };
 
 type FormState = {
@@ -17,6 +20,8 @@ type FormState = {
   targetValue: string;
   unit: string;
   targetDate: string;
+  description: string;
+  steps: string;
 };
 
 const defaultForm: FormState = {
@@ -24,8 +29,10 @@ const defaultForm: FormState = {
   category: "Fitness",
   currentValue: "0",
   targetValue: "",
-  unit: "",
+  unit: "km",
   targetDate: "",
+  description: "",
+  steps: "",
 };
 
 const categoryOptions = [
@@ -35,40 +42,37 @@ const categoryOptions = [
   { value: "Weight", label: "Weight" },
 ];
 
-const unitSuggestions: Record<GoalLabel, string> = {
-  Fitness: "km",
-  Nutrition: "g",
-  Sleep: "hrs avg",
-  Weight: "kg",
-};
-
-function toDueLabel(targetDate: string) {
-  if (!targetDate) return "Ongoing";
-  const parsed = new Date(targetDate);
-  if (Number.isNaN(parsed.getTime())) return "Ongoing";
-
-  return parsed.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function toProgress(currentValue: number, targetValue: number) {
-  if (targetValue <= 0) return 0;
-  return Math.max(
-    0,
-    Math.min(100, Math.round((currentValue / targetValue) * 100)),
-  );
-}
-
 export default function AddGoalModal({
   isOpen,
   onClose,
-  onCreateGoal,
+  onSubmitGoal,
+  initialGoal,
+  isSubmitting = false,
 }: AddGoalModalProps) {
   const [form, setForm] = useState<FormState>(defaultForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (initialGoal) {
+      setForm({
+        title: initialGoal.title,
+        category: initialGoal.category,
+        currentValue: String(initialGoal.currentValue),
+        targetValue: String(initialGoal.targetValue),
+        unit: initialGoal.unit,
+        targetDate: initialGoal.targetDate || "",
+        description: initialGoal.description,
+        steps: initialGoal.steps.join("\n"),
+      });
+      setErrors({});
+      return;
+    }
+
+    setForm(defaultForm);
+    setErrors({});
+  }, [isOpen, initialGoal]);
 
   const computedProgress = useMemo(() => {
     const current = Number(form.currentValue);
@@ -93,12 +97,12 @@ export default function AddGoalModal({
     setForm((prev) => ({
       ...prev,
       category,
-      unit: unitSuggestions[category],
+      unit: defaultUnitByCategory(category),
     }));
     setErrors((prev) => ({ ...prev, category: "" }));
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const nextErrors: Record<string, string> = {};
@@ -117,22 +121,33 @@ export default function AddGoalModal({
       return;
     }
 
-    onCreateGoal({
-      id: Date.now(),
+    const steps = form.steps
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    await onSubmitGoal({
       title: trimmedTitle,
       category: form.category,
-      progress: toProgress(current, target),
       currentValue: current,
       targetValue: target,
-      unit: form.unit,
-      dueLabel: toDueLabel(form.targetDate),
+      unit: form.unit || defaultUnitByCategory(form.category),
+      targetDate: form.targetDate,
+      description: form.description.trim(),
+      steps,
     });
 
-    resetAndClose();
+    if (!isSubmitting) {
+      resetAndClose();
+    }
   };
 
   return (
-    <Modal isOpen={isOpen} title="Add New Goal" onClose={resetAndClose}>
+    <Modal
+      isOpen={isOpen}
+      title={initialGoal ? "Edit Goal" : "Add New Goal"}
+      onClose={resetAndClose}
+    >
       <form onSubmit={handleSubmit} className="space-y-4" data-lpignore="true">
         <Input
           id="goal-title"
@@ -167,6 +182,26 @@ export default function AddGoalModal({
             hint={`Auto-set based on ${form.category}`}
           />
         </div>
+
+        <Textarea
+          id="goal-description"
+          name="goal-description"
+          label="Goal Description"
+          placeholder="Describe why this goal matters and how you will approach it"
+          rows={3}
+          value={form.description}
+          onChange={(event) => updateField("description", event.target.value)}
+        />
+
+        <Textarea
+          id="goal-steps"
+          name="goal-steps"
+          label="How to Follow This Goal (one step per line)"
+          placeholder={"Plan weekly sessions\nTrack progress every Sunday\nAdjust intensity every 2 weeks"}
+          rows={4}
+          value={form.steps}
+          onChange={(event) => updateField("steps", event.target.value)}
+        />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
@@ -226,7 +261,9 @@ export default function AddGoalModal({
           <Button type="button" variant="outline" onClick={resetAndClose}>
             Cancel
           </Button>
-          <Button type="submit">Create Goal</Button>
+          <Button type="submit" loading={isSubmitting}>
+            {initialGoal ? "Save Changes" : "Create Goal"}
+          </Button>
         </div>
       </form>
     </Modal>

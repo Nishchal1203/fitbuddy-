@@ -406,7 +406,11 @@ export default function AIGoalAssistant({
   }
 
   function handleApply(data: AIActionData) {
-    onApply(data);
+    onApply({
+      ...data,
+      ai_summary: response?.summary,
+      ai_suggestions: response?.suggestions,
+    });
     handleClose();
   }
 
@@ -417,6 +421,7 @@ export default function AIGoalAssistant({
       isOpen={isOpen}
       onClose={handleClose}
       title=""
+      hideHeader
       className="max-w-[540px] overflow-hidden !p-0 bg-white"
     >
       <div className="flex flex-col">

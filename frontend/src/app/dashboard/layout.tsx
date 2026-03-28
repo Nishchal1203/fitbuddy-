@@ -29,10 +29,10 @@ export default function DashboardLayout({
 
   return (
     <ToastProvider>
-      <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900">
+      <div className="flex h-screen flex-col overflow-hidden bg-gray-50 text-gray-900">
         <EnterpriseTopNav />
         <div
-          className={`grid min-h-0 flex-1 transition-[grid-template-columns] duration-300 ${
+          className={`grid min-h-0 flex-1 overflow-hidden transition-[grid-template-columns] duration-300 ${
             isCollapsed ? "grid-cols-[5.25rem_1fr]" : "grid-cols-[16rem_1fr]"
           }`}
         >
@@ -42,7 +42,7 @@ export default function DashboardLayout({
             isCollapsed={isCollapsed}
             onToggleCollapse={() => setIsCollapsed((prev) => !prev)}
           />
-          <main className="min-h-0 overflow-y-auto">
+          <main className="min-h-0 overflow-y-auto overflow-x-hidden">
             <div className="p-6">{children}</div>
           </main>
         </div>

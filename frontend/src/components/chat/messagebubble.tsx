@@ -15,36 +15,52 @@ function formatTime(d: Date) {
 
 /** Minimal markdown renderer — bold + bullets + numbered + blank lines */
 function renderMarkdown(text: string) {
-  return text.split("\n").map((line, i) => {
-    const parts = line.split(/(\*\*[^*]+\*\*)/).map((part, j) =>
+  const renderInline = (value: string, keyPrefix: string) =>
+    value.split(/(\*\*[^*]+\*\*)/).map((part, idx) =>
       part.startsWith("**") && part.endsWith("**") ? (
-        <strong key={j} className="font-bold text-brand-slate">
+        <strong key={`${keyPrefix}-${idx}`} className="font-bold text-brand-slate">
           {part.slice(2, -2)}
         </strong>
       ) : (
-        part
+        <span key={`${keyPrefix}-${idx}`}>{part}</span>
       ),
     );
-    if (line.startsWith("• ") || line.startsWith("* "))
+
+  return text.split("\n").map((line, i) => {
+    const trimmed = line.trim();
+
+    if (trimmed === "") return <div key={i} className="h-1.5" />;
+
+    if (/^\*\*[^*]+:\*\*$/.test(trimmed)) {
+      return (
+        <p key={i} className="text-sm font-semibold leading-relaxed text-brand-slate">
+          {trimmed.slice(2, -2)}
+        </p>
+      );
+    }
+
+    if (trimmed.startsWith("• ") || trimmed.startsWith("* ") || trimmed.startsWith("- "))
       return (
         <div key={i} className="flex items-start gap-2 text-sm">
           <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-brand-purple" />
-          <span>{parts.slice(1)}</span>
+          <span>{renderInline(trimmed.replace(/^[•*-]\s+/, ""), `bullet-${i}`)}</span>
         </div>
       );
-    if (/^\d+\./.test(line))
+
+    if (/^\d+\.\s+/.test(trimmed)) {
+      const marker = trimmed.match(/^\d+\./)?.[0] ?? "1.";
+      const content = trimmed.replace(/^\d+\.\s+/, "");
       return (
         <div key={i} className="flex items-start gap-2 text-sm">
-          <span className="font-semibold text-brand-purple">
-            {line.match(/^\d+\./)?.[0]}
-          </span>
-          <span>{parts.slice(1)}</span>
+          <span className="font-semibold text-brand-purple">{marker}</span>
+          <span>{renderInline(content, `num-${i}`)}</span>
         </div>
       );
-    if (line === "") return <div key={i} className="h-1.5" />;
+    }
+
     return (
       <p key={i} className="text-sm leading-relaxed">
-        {parts}
+        {renderInline(trimmed, `line-${i}`)}
       </p>
     );
   });
@@ -66,7 +82,7 @@ export default function MessageBubble({ message, onLike, onDislike }: Props) {
   if (isUser) {
     return (
       <div className="flex items-end justify-end gap-2.5 px-4">
-        <div className="max-w-[72%] space-y-1">
+        <div className="max-w-[82%] space-y-1 md:max-w-[84%]">
           {message.image && (
             <div className="overflow-hidden rounded-2xl rounded-br-sm border border-brand-pale">
               <img
@@ -77,7 +93,7 @@ export default function MessageBubble({ message, onLike, onDislike }: Props) {
             </div>
           )}
           {message.text && (
-            <div className="rounded-2xl rounded-br-sm bg-gradient-to-br from-brand-soft to-brand-deep px-4 py-3 text-white shadow-md">
+            <div className="rounded-2xl rounded-br-sm bg-gradient-to-br from-brand-soft to-brand-deep px-4 py-3.5 text-white shadow-md">
               <p className="text-sm leading-relaxed">{message.text}</p>
             </div>
           )}
@@ -99,8 +115,8 @@ export default function MessageBubble({ message, onLike, onDislike }: Props) {
         <Image src={AiIcon} alt="AI Trainer" width={20} height={20} />
       </div>
 
-      <div className="max-w-[76%] space-y-1">
-        <div className="rounded-2xl rounded-bl-sm border border-brand-pale bg-white px-4 py-3.5 shadow-sm">
+      <div className="max-w-[84%] space-y-1 md:max-w-[86%]">
+        <div className="rounded-2xl rounded-bl-sm border border-brand-pale bg-white px-4 py-4 shadow-sm">
           <div className="space-y-1 text-brand-slate">
             {renderMarkdown(message.text)}
           </div>

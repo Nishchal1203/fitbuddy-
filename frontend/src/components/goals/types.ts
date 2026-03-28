@@ -11,6 +11,9 @@ export type ActiveGoal = {
   targetValue: number;
   unit: string;
   dueLabel: string;
+  description: string;
+  targetDate: string | null;
+  steps: string[];
 };
 
 export type CompletedGoal = {
@@ -18,4 +21,15 @@ export type CompletedGoal = {
   title: string;
   achievedLabel: string;
   category: GoalLabel;
+};
+
+export type GoalFormValues = {
+  title: string;
+  category: GoalLabel;
+  currentValue: number;
+  targetValue: number;
+  unit: string;
+  targetDate: string;
+  description: string;
+  steps: string[];
 };

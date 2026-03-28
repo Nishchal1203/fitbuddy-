@@ -20,7 +20,7 @@ export default function GoalsHeader({ onAddGoal }: GoalsHeaderProps) {
         </p>
       </div>
 
-      <Button
+      {/* <Button
         type="button"
         size="sm"
         className="rounded-xl"
@@ -28,7 +28,7 @@ export default function GoalsHeader({ onAddGoal }: GoalsHeaderProps) {
       >
         <Plus size={16} />
         New Goal
-      </Button>
+      </Button> */}
     </div>
   );
 }

@@ -28,11 +28,11 @@ type ToastContextValue = {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 const variantClasses: Record<ToastVariant, string> = {
-  success: "border-brand-soft/50 bg-brand-soft/15 text-brand-deep",
-  error: "border-red-200 bg-red-50 text-red-700",
-  warning: "border-brand-gold/50 bg-brand-gold/20 text-yellow-800",
+  success: "border-brand-soft/55 bg-brand-soft/20 text-brand-deep",
+  error: "border-primary-700/45 bg-primary-100 text-primary-900",
+  warning: "border-brand-gold/55 bg-brand-gold/20 text-brand-slate",
   achievement:
-    "border-brand-gold/50 bg-gradient-to-r from-brand-gold/35 to-brand-goldLight/20 text-yellow-900",
+    "border-brand-gold/55 bg-gradient-to-r from-brand-gold/35 to-brand-goldLight/20 text-brand-slate",
   info: "border-brand-pale bg-brand-bg text-brand-deep",
 };
 
