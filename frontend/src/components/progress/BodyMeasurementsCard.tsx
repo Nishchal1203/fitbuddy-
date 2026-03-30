@@ -2,11 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { TrendingDown, TrendingUp, Minus, Ruler } from "lucide-react";
-import { API_BASE_URL, buildAuthHeaders } from "@/Utils/api";
+import { API_BASE_URL, buildAuthHeaders, readErrorMessage } from "@/Utils/api";
 
-/* ─────────────────────────────────────────────
-   TYPES
-───────────────────────────────────────────── */
 type MeasurementKey =
   | "chest"
   | "waist"
@@ -18,8 +15,8 @@ type MeasurementKey =
 type MeasurementEntry = {
   key: MeasurementKey;
   label: string;
-  current: number; // cm
-  previous: number; // cm  — last recorded value for delta
+  current: number;
+  previous: number;
   unit: string;
   emoji: string;
 };
@@ -33,63 +30,6 @@ type ApiMeasurements = {
   shoulders?: { current: number; previous: number };
 };
 
-/* ─────────────────────────────────────────────
-   FALLBACK DATA
-───────────────────────────────────────────── */
-const FALLBACK: MeasurementEntry[] = [
-  {
-    key: "chest",
-    label: "Chest",
-    current: 95,
-    previous: 97,
-    unit: "cm",
-    emoji: "",
-  },
-  {
-    key: "waist",
-    label: "Waist",
-    current: 80,
-    previous: 83,
-    unit: "cm",
-    emoji: "",
-  },
-  {
-    key: "hips",
-    label: "Hips",
-    current: 102,
-    previous: 103,
-    unit: "cm",
-    emoji: "",
-  },
-  {
-    key: "biceps",
-    label: "Biceps",
-    current: 30,
-    previous: 29,
-    unit: "cm",
-    emoji: "",
-  },
-  {
-    key: "thighs",
-    label: "Thighs",
-    current: 55,
-    previous: 56,
-    unit: "cm",
-    emoji: "",
-  },
-  {
-    key: "shoulders",
-    label: "Shoulders",
-    current: 112,
-    previous: 112,
-    unit: "cm",
-    emoji: "",
-  },
-];
-
-/* ─────────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────────── */
 function parseMeasurements(api: ApiMeasurements): MeasurementEntry[] {
   const map: { key: MeasurementKey; label: string; emoji: string }[] = [
     { key: "chest", label: "Chest", emoji: "💪" },
@@ -110,9 +50,6 @@ function parseMeasurements(api: ApiMeasurements): MeasurementEntry[] {
     }));
 }
 
-/* ─────────────────────────────────────────────
-   SINGLE MEASUREMENT TILE
-───────────────────────────────────────────── */
 function MeasurementTile({ entry }: { entry: MeasurementEntry }) {
   const delta = +(entry.current - entry.previous).toFixed(1);
   const isDown = delta < 0;
@@ -121,7 +58,6 @@ function MeasurementTile({ entry }: { entry: MeasurementEntry }) {
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-brand-pale bg-white p-4 shadow-[0_2px_12px_-4px_#9567B920]">
-      {/* label + emoji */}
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-widest text-brand-slate/50">
           {entry.label}
@@ -129,7 +65,6 @@ function MeasurementTile({ entry }: { entry: MeasurementEntry }) {
         <span className="text-base">{entry.emoji}</span>
       </div>
 
-      {/* current value */}
       <div>
         <span className="text-2xl font-bold text-brand-slate">
           {entry.current}
@@ -139,13 +74,12 @@ function MeasurementTile({ entry }: { entry: MeasurementEntry }) {
         </span>
       </div>
 
-      {/* delta indicator */}
       <div
-        className={`flex items-center gap-1 rounded-lg px-2 py-1 w-fit text-xs font-semibold ${
+        className={`flex w-fit items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${
           isDown
-            ? "bg-green-50 text-green-600" // shrinking = good (waist/hips)
+            ? "bg-green-50 text-green-600"
             : isUp
-              ? "bg-[#FCB60F]/10 text-[#FCB60F]" // growing = good (biceps/chest)
+              ? "bg-[#FCB60F]/10 text-[#FCB60F]"
               : "bg-brand-bg text-brand-slate/45"
         }`}
       >
@@ -155,7 +89,6 @@ function MeasurementTile({ entry }: { entry: MeasurementEntry }) {
         <span>{same ? "No change" : `${isUp ? "+" : ""}${delta} cm`}</span>
       </div>
 
-      {/* previous value note */}
       <p className="text-[10px] text-brand-slate/35">
         Previous: {entry.previous} {entry.unit}
       </p>
@@ -163,9 +96,6 @@ function MeasurementTile({ entry }: { entry: MeasurementEntry }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   SKELETON TILE
-───────────────────────────────────────────── */
 function SkeletonTile() {
   return (
     <div className="animate-pulse rounded-2xl border border-brand-pale bg-white p-4">
@@ -176,30 +106,28 @@ function SkeletonTile() {
   );
 }
 
-/* ─────────────────────────────────────────────
-   COMPONENT
-───────────────────────────────────────────── */
 export default function BodyMeasurementsCard() {
   const [measurements, setMeasurements] = useState<MeasurementEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isFallback, setIsFallback] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch(`${API_BASE_URL}/api/user/measurements`, {
         headers: buildAuthHeaders(),
       });
-
-      if (!res.ok) throw new Error("API error");
-
+      if (!res.ok) {
+        setError(await readErrorMessage(res, "Could not load measurements"));
+        setMeasurements([]);
+        setLastUpdated(null);
+        return;
+      }
       const json: ApiMeasurements & { updated_at?: string } = await res.json();
-
       const parsed = parseMeasurements(json);
-      setMeasurements(parsed.length ? parsed : FALLBACK);
-      setIsFallback(!parsed.length);
-
+      setMeasurements(parsed);
       if (json.updated_at) {
         setLastUpdated(
           new Date(json.updated_at).toLocaleDateString("en-GB", {
@@ -208,10 +136,13 @@ export default function BodyMeasurementsCard() {
             year: "numeric",
           }),
         );
+      } else {
+        setLastUpdated(null);
       }
     } catch {
-      setMeasurements(FALLBACK);
-      setIsFallback(true);
+      setError("Network error while loading measurements");
+      setMeasurements([]);
+      setLastUpdated(null);
     } finally {
       setLoading(false);
     }
@@ -223,7 +154,6 @@ export default function BodyMeasurementsCard() {
 
   return (
     <div className="rounded-2xl bg-white p-5 shadow-[0_4px_20px_-4px_#9567B920]">
-      {/* ── Header ── */}
       <div className="mb-4 flex items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
@@ -234,13 +164,13 @@ export default function BodyMeasurementsCard() {
           </div>
           <p className="mt-1 text-xs text-brand-slate/50">
             {lastUpdated
-              ? `Last updated ${lastUpdated} · auto-synced from profile`
-              : "Auto-synced from your profile"}
+              ? `Last updated ${lastUpdated} · from your measurement history`
+              : "Compared to your previous logged entry"}
           </p>
         </div>
 
-        {/* overall summary pill */}
         {!loading &&
+          !error &&
           measurements.length > 0 &&
           (() => {
             const improved = measurements.filter(
@@ -249,26 +179,45 @@ export default function BodyMeasurementsCard() {
             return improved > 0 ? (
               <div className="flex items-center gap-1.5 rounded-xl bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-600">
                 <TrendingDown size={13} />
-                {improved} measurement{improved > 1 ? "s" : ""} improved
+                {improved} measurement{improved > 1 ? "s" : ""} down vs last log
               </div>
             ) : null;
           })()}
       </div>
 
-      {/* ── Grid ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {loading
-          ? [...Array(6)].map((_, i) => <SkeletonTile key={i} />)
-          : measurements.map((entry) => (
-              <MeasurementTile key={entry.key} entry={entry} />
-            ))}
-      </div>
-
-      {/* ── Fallback note ── */}
-      {isFallback && !loading && (
-        <p className="mt-3 text-center text-[11px] text-brand-slate/35">
-          Showing sample data · log a workout to auto-update measurements
-        </p>
+      {loading ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {[...Array(6)].map((_, i) => (
+            <SkeletonTile key={i} />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+          <p className="text-sm font-medium text-brand-slate">{error}</p>
+          <button
+            type="button"
+            onClick={() => fetchData()}
+            className="text-xs font-semibold text-brand-purple hover:underline"
+          >
+            Try again
+          </button>
+        </div>
+      ) : measurements.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+          <p className="text-sm font-medium text-brand-slate">
+            No measurements to show
+          </p>
+          <p className="max-w-md text-xs text-brand-slate/50">
+            Log chest, waist, arms, or legs on two different days to see current
+            values and change vs your previous entry.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {measurements.map((entry) => (
+            <MeasurementTile key={entry.key} entry={entry} />
+          ))}
+        </div>
       )}
     </div>
   );
