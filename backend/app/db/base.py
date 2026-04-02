@@ -5,7 +5,7 @@ from app.models.user import User  # noqa: F401
 from app.models.exercise import Exercise  # noqa: F401
 from app.models.workout import WorkoutSession, Workout, WorkoutPlanFollow  # noqa: F401
 from app.models.goal import Goal  # noqa: F401
-from app.models.progress import Progress  # noqa: F401
+from app.models.progress import BodyMeasurement, UserAchievement  # noqa: F401
 from app.models.nutrition import (  # noqa: F401
 	FoodItem,
 	MealLog,

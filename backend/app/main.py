@@ -10,6 +10,7 @@ from app.api.routes import goals as goals_routes
 from app.api.routes import users as users_routes
 from app.api.routes import workout_plans as workout_plans_routes
 from app.api.routes import progress as progress_routes
+from app.api.routes import user_dashboard as user_dashboard_routes
 from app.api.routes import health as health_routes
 from app.api.routes import reports as reports_routes
 from app.api.routes import nutrition as nutrition_routes
@@ -84,6 +85,7 @@ app.include_router(exercises_routes.router, prefix="/api")
 app.include_router(workouts_routes.router, prefix="/api")
 app.include_router(goals_routes.router, prefix="/api")
 app.include_router(progress_routes.router, prefix="/api")
+app.include_router(user_dashboard_routes.router, prefix="/api")
 app.include_router(users_routes.router, prefix="/api")
 app.include_router(workout_plans_routes.router, prefix="/api")
 app.include_router(health_routes.router, prefix="/api")

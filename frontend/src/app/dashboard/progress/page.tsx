@@ -23,8 +23,9 @@ export default function ProgressPage() {
           Fitness Progress &amp; Achievements
         </h1>
         <p className="mt-1 text-sm text-brand-slate/55">
-          All stats auto-updated from your workouts, diet logs, and goals — no
-          manual entry needed.
+          Workouts and monthly stats come from your sessions. Weight and
+          measurements use your logged body data. Achievements appear when
+          your account unlocks them.
         </p>
       </div>
 

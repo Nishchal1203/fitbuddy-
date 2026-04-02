@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 	from app.models.exercise import Exercise
 	from app.models.workout import WorkoutSession, Workout, WorkoutPlanFollow
 	from app.models.goal import Goal
-	from app.models.progress import Progress
+	from app.models.progress import BodyMeasurement, UserAchievement
 	from app.models.nutrition import (
 		FoodItem,
 		MealLog,
@@ -38,7 +38,6 @@ class User(Base):
 	workout_plans: Mapped[list[Workout]] = relationship(back_populates="owner", cascade="all, delete-orphan")
 	followed_workout_plans: Mapped[list[WorkoutPlanFollow]] = relationship(back_populates="user", cascade="all, delete-orphan")
 	goals: Mapped[list[Goal]] = relationship(back_populates="owner", cascade="all, delete-orphan")
-	progress_entries: Mapped[list[Progress]] = relationship(back_populates="owner", cascade="all, delete-orphan")
 	food_items: Mapped[list[FoodItem]] = relationship(back_populates="owner", cascade="all, delete-orphan")
 	meal_logs: Mapped[list[MealLog]] = relationship(back_populates="owner", cascade="all, delete-orphan")
 	hydration_logs: Mapped[list[HydrationLog]] = relationship(back_populates="owner", cascade="all, delete-orphan")
@@ -48,4 +47,8 @@ class User(Base):
 	trainer_chat_conversations: Mapped[list[TrainerChatConversation]] = relationship(
 		back_populates="owner",
 		cascade="all, delete-orphan",
+		
 	)
+	measurements: Mapped[list["BodyMeasurement"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+	achievements: Mapped[list["UserAchievement"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+
