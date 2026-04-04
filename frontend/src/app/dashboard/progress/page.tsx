@@ -2,11 +2,13 @@
 
 import React, { Suspense } from "react";
 import {
+  ComprehensiveProgressChart,
   WeightTrendChart,
   BodyMeasurementsCard,
   MonthlySummaryCard,
   StreakCounter,
   AchievementBadges,
+  ComprehensiveProgressSkeleton,
   WeightTrendSkeleton,
   BodyMeasurementsSkeleton,
   MonthlySummarySkeleton,
@@ -23,11 +25,14 @@ export default function ProgressPage() {
           Fitness Progress &amp; Achievements
         </h1>
         <p className="mt-1 text-sm text-brand-slate/55">
-          Workouts and monthly stats come from your sessions. Weight and
-          measurements use your logged body data. Achievements appear when
-          your account unlocks them.
+          Track all your metrics in one place: workouts, diet, weight, goals, and measurements.
         </p>
       </div>
+
+      {/* ── Comprehensive Progress Chart (Main Dashboard) ── */}
+      <Suspense fallback={<ComprehensiveProgressSkeleton />}>
+        <ComprehensiveProgressChart />
+      </Suspense>
 
       {/* ── Weight Trend ── */}
       <Suspense fallback={<WeightTrendSkeleton />}>

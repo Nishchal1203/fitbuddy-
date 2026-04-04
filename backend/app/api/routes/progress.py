@@ -15,6 +15,7 @@ from app.schemas.progress import (
     StreakResponse,
     WeightHistoryEntry,
     WeightTrendResponse,
+    ComprehensiveProgressResponse,
 )
 from app.services.achievement_badge_map import achievement_to_badge_card
 from app.services.progress_service import progress_service
@@ -131,3 +132,30 @@ def get_user_achievements(
         .all()
     )
     return [achievement_to_badge_card(a) for a in achievements]
+
+
+@router.get("/comprehensive", response_model=ComprehensiveProgressResponse)
+def get_comprehensive_progress(
+    timeframe: str = Query(
+        "1_month", description="Valid options: '1_month', '3_months', '6_months', '1_year'"
+    ),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Get comprehensive progress tracking across all metrics:
+    - Weight & body measurements
+    - Workout sessions, duration, calories burned
+    - Diet (calories, macros)
+    - Hydration
+    - Goal completions
+    """
+    valid_timeframes = ["1_month", "3_months", "6_months", "1_year"]
+    if timeframe not in valid_timeframes:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid timeframe. Must be one of: {valid_timeframes}",
+        )
+    return progress_service.get_comprehensive_progress(
+        db=db, user_id=current_user.id, timeframe=timeframe
+    )

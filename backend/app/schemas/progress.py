@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date as DateType, datetime
 from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -18,7 +18,7 @@ class BodyMeasurementBase(BaseModel):
 
 
 class BodyMeasurementCreate(BodyMeasurementBase):
-    date: date = Field(default_factory=date.today, description="Date of the measurement")
+    date: DateType = Field(default_factory=DateType.today, description="Date of the measurement")
 
 
 class BodyMeasurementUpdate(BodyMeasurementBase):
@@ -27,7 +27,7 @@ class BodyMeasurementUpdate(BodyMeasurementBase):
 
 class BodyMeasurementResponse(BodyMeasurementBase):
     id: int
-    date: date
+    date: DateType
     owner_id: int
 
     model_config = ConfigDict(from_attributes=True)
@@ -50,7 +50,7 @@ class UserAchievementResponse(BaseModel):
 
 
 class WeightDataPoint(BaseModel):
-    date: date
+    date: DateType
     weight: float
 
 
@@ -140,3 +140,32 @@ class ProgressDashboardResponse(BaseModel):
     streak: StreakResponse
     monthly_summary: MonthlySummaryCardResponse
     recent_achievements: List[UserAchievementResponse]
+
+
+# 4. Comprehensive Progress Tracking (multi-metric timeseries)
+
+class ComprehensiveProgressPoint(BaseModel):
+    """Single day of aggregated progress across all metrics"""
+    date: str  # ISO-8601 date string
+    weight: Optional[float] = Field(None, description="Body weight in kg")
+    workout_sessions: int = Field(default=0, description="Number of workout sessions")
+    workout_calories: float = Field(default=0.0, description="Total calories burned in workouts")
+    workout_duration_minutes: int = Field(default=0, description="Total workout duration in minutes")
+    diet_calories_consumed: float = Field(default=0.0, description="Total calories consumed from food")
+    diet_macros_protein: float = Field(default=0.0, description="Protein in grams")
+    diet_macros_carbs: float = Field(default=0.0, description="Carbs in grams")
+    diet_macros_fat: float = Field(default=0.0, description="Fat in grams")
+    hydration_ml: int = Field(default=0, description="Total hydration in milliliters")
+    goals_completed: int = Field(default=0, description="Goals completed on this day")
+    goals_total: int = Field(default=0, description="Total active goals")
+    measurement_logged: bool = Field(default=False, description="Body measurement recorded")
+
+
+class ComprehensiveProgressResponse(BaseModel):
+    """Complete progress tracking over a timeframe"""
+    timeframe: str = Field(..., description="'1_month', '3_months', '6_months', '1_year'")
+    data: List[ComprehensiveProgressPoint]
+    summary: dict = Field(
+        default_factory=dict,
+        description="Aggregated stats for the timeframe (total workouts, total calories, etc.)"
+    )

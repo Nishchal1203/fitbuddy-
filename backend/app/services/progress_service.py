@@ -6,12 +6,16 @@ from sqlalchemy.orm import Session
 
 from app.models.workout import WorkoutSession
 from app.models.progress import BodyMeasurement
+from app.models.nutrition import MealLog, HydrationLog
+from app.models.goal import Goal
 from app.schemas.progress import (
     AchievementBadgeCard,
     MonthlySummaryCardResponse,
     StreakResponse,
     WeightDataPoint,
     WeightTrendResponse,
+    ComprehensiveProgressPoint,
+    ComprehensiveProgressResponse,
 )
 
 
@@ -220,6 +224,168 @@ class ProgressService:
             latest.date, datetime.min.time(), tzinfo=timezone.utc
         ).isoformat()
         return out
+
+    @staticmethod
+    def get_comprehensive_progress(
+        db: Session, user_id: int, timeframe: str = "1_month"
+    ) -> ComprehensiveProgressResponse:
+        """
+        Aggregate all progress metrics (workouts, diet, goals, measurements) by date.
+        Returns a comprehensive timeseries for the given timeframe.
+        """
+        today = date.today()
+        if timeframe == "3_months":
+            start_date = today - timedelta(days=90)
+        elif timeframe == "6_months":
+            start_date = today - timedelta(days=180)
+        elif timeframe == "1_year":
+            start_date = today - timedelta(days=365)
+        else:  # default to 1_month
+            start_date = today - timedelta(days=30)
+
+        # Fetch all relevant data
+        workouts = (
+            db.query(WorkoutSession)
+            .filter(
+                WorkoutSession.owner_id == user_id,
+                func.date(WorkoutSession.performed_at) >= start_date,
+            )
+            .all()
+        )
+
+        meal_logs = (
+            db.query(MealLog)
+            .filter(
+                MealLog.owner_id == user_id,
+                MealLog.date >= start_date,
+            )
+            .all()
+        )
+
+        hydration_logs = (
+            db.query(HydrationLog)
+            .filter(
+                HydrationLog.owner_id == user_id,
+                HydrationLog.date >= start_date,
+            )
+            .all()
+        )
+
+        measurements = (
+            db.query(BodyMeasurement)
+            .filter(
+                BodyMeasurement.owner_id == user_id,
+                BodyMeasurement.date >= start_date,
+            )
+            .all()
+        )
+
+        goals = (
+            db.query(Goal)
+            .filter(Goal.owner_id == user_id)
+            .all()
+        )
+
+        # Build day-by-day aggregation
+        date_map: dict[date, dict[str, Any]] = {}
+
+        # Aggregate workouts
+        for ws in workouts:
+            ws_date = func.date(ws.performed_at).compile(compile_kwargs={"literal_binds": True})
+            d = ws.performed_at.date()
+            if d not in date_map:
+                date_map[d] = {
+                    "workout_sessions": 0,
+                    "workout_calories": 0.0,
+                    "workout_duration_minutes": 0,
+                }
+            date_map[d]["workout_sessions"] += 1
+            if ws.calories_burned:
+                date_map[d]["workout_calories"] += ws.calories_burned
+            if ws.duration_minutes:
+                date_map[d]["workout_duration_minutes"] += ws.duration_minutes
+
+        # Aggregate meals
+        for meal in meal_logs:
+            if meal.date not in date_map:
+                date_map[meal.date] = {}
+            if "diet_calories_consumed" not in date_map[meal.date]:
+                date_map[meal.date]["diet_calories_consumed"] = 0.0
+                date_map[meal.date]["diet_macros_protein"] = 0.0
+                date_map[meal.date]["diet_macros_carbs"] = 0.0
+                date_map[meal.date]["diet_macros_fat"] = 0.0
+            date_map[meal.date]["diet_calories_consumed"] += meal.kcal
+            date_map[meal.date]["diet_macros_protein"] += meal.protein_g
+            date_map[meal.date]["diet_macros_carbs"] += meal.carbs_g
+            date_map[meal.date]["diet_macros_fat"] += meal.fat_g
+
+        # Aggregate hydration
+        for hydration in hydration_logs:
+            if hydration.date not in date_map:
+                date_map[hydration.date] = {"hydration_ml": 0}
+            if "hydration_ml" not in date_map[hydration.date]:
+                date_map[hydration.date]["hydration_ml"] = 0
+            date_map[hydration.date]["hydration_ml"] += hydration.amount_ml
+
+        # Add measurement data
+        for meas in measurements:
+            if meas.date not in date_map:
+                date_map[meas.date] = {}
+            date_map[meas.date]["weight"] = meas.weight
+            date_map[meas.date]["measurement_logged"] = True
+
+        # Count completed goals (filtered to dates when they were completed)
+        total_goals = len(goals)
+        for goal in goals:
+            if goal.is_completed and goal.completed_at:
+                goal_date = goal.completed_at.date()
+                if goal_date >= start_date:
+                    if goal_date not in date_map:
+                        date_map[goal_date] = {}
+                    if "goals_completed" not in date_map[goal_date]:
+                        date_map[goal_date]["goals_completed"] = 0
+                    date_map[goal_date]["goals_completed"] += 1
+
+        # Build result list, sorted by date
+        result_data = []
+        for d in sorted(date_map.keys()):
+            point_data = date_map[d]
+            point = ComprehensiveProgressPoint(
+                date=d.isoformat(),
+                weight=point_data.get("weight"),
+                workout_sessions=point_data.get("workout_sessions", 0),
+                workout_calories=point_data.get("workout_calories", 0.0),
+                workout_duration_minutes=point_data.get("workout_duration_minutes", 0),
+                diet_calories_consumed=point_data.get("diet_calories_consumed", 0.0),
+                diet_macros_protein=point_data.get("diet_macros_protein", 0.0),
+                diet_macros_carbs=point_data.get("diet_macros_carbs", 0.0),
+                diet_macros_fat=point_data.get("diet_macros_fat", 0.0),
+                hydration_ml=point_data.get("hydration_ml", 0),
+                goals_completed=point_data.get("goals_completed", 0),
+                goals_total=total_goals,
+                measurement_logged=point_data.get("measurement_logged", False),
+            )
+            result_data.append(point)
+
+        # Compute summary stats
+        summary = {
+            "total_workouts": sum(p.workout_sessions for p in result_data),
+            "total_workout_calories": sum(p.workout_calories for p in result_data),
+            "total_workout_minutes": sum(p.workout_duration_minutes for p in result_data),
+            "total_calories_consumed": sum(p.diet_calories_consumed for p in result_data),
+            "total_protein": sum(p.diet_macros_protein for p in result_data),
+            "total_carbs": sum(p.diet_macros_carbs for p in result_data),
+            "total_fat": sum(p.diet_macros_fat for p in result_data),
+            "total_hydration_ml": sum(p.hydration_ml for p in result_data),
+            "days_with_measurements": sum(1 for p in result_data if p.measurement_logged),
+            "goals_completed_in_period": sum(p.goals_completed for p in result_data),
+        }
+
+        return ComprehensiveProgressResponse(
+            timeframe=timeframe,
+            data=result_data,
+            summary=summary,
+        )
 
 
 progress_service = ProgressService()

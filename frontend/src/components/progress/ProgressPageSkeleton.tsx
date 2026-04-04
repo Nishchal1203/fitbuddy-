@@ -278,6 +278,93 @@ function AchievementBadgesSkeleton() {
 }
 
 /* ─────────────────────────────────────────────
+   COMPREHENSIVE PROGRESS SKELETON
+───────────────────────────────────────────── */
+function ComprehensiveProgressSkeleton() {
+  return (
+    <div className="rounded-2xl bg-white p-6 shadow-[0_4px_20px_-4px_#9567B920]">
+      {/* Header */}
+      <div className="mb-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <Pulse className="h-8 w-8 rounded-xl" />
+          <Pulse className="h-4 w-40" />
+        </div>
+        <Pulse className="h-3 w-80" />
+      </div>
+
+      {/* TimeframeButtons */}
+      <div className="mb-4 flex gap-2">
+        {[...Array(4)].map((_, i) => (
+          <Pulse
+            key={i}
+            className="h-8 w-20 rounded-lg"
+            style={{ animationDelay: `${i * 50}ms` } as React.CSSProperties}
+          />
+        ))}
+      </div>
+
+      {/* Summary Stats Grid */}
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {[...Array(5)].map((_, i) => (
+          <div
+            key={i}
+            className="animate-pulse space-y-2 rounded-lg border border-brand-pale bg-white p-3"
+            style={{ animationDelay: `${i * 60}ms` }}
+          >
+            <Pulse className="h-3 w-16" />
+            <Pulse className="h-6 w-12" />
+            <Pulse className="h-2.5 w-10" />
+          </div>
+        ))}
+      </div>
+
+      {/* Metric Filters */}
+      <div className="mb-4 animate-pulse space-y-3 rounded-lg border border-brand-pale bg-brand-bg p-4">
+        <Pulse className="h-3 w-16" />
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="space-y-2">
+            <Pulse className="h-3 w-20" />
+            <div className="flex gap-2">
+              {[...Array(4)].map((_, j) => (
+                <Pulse key={j} className="h-7 w-14 rounded-lg" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Chart Area */}
+      <div className="rounded-lg border border-brand-pale bg-brand-bg/30 p-4">
+        <div className="animate-pulse space-y-4">
+          {/* Chart lines/bars simulation */}
+          <div className="flex h-[300px] items-end gap-1 px-2">
+            {[...Array(30)].map((_, i) => (
+              <div
+                key={i}
+                className="animate-pulse flex-1 rounded-t-sm bg-brand-pale"
+                style={{
+                  height: `${Math.random() * 100}%`,
+                  animationDelay: `${i * 30}ms`,
+                }}
+              />
+            ))}
+          </div>
+          <div className="flex justify-between">
+            {[...Array(5)].map((_, i) => (
+              <Pulse
+                key={i}
+                className="h-2.5 w-8"
+                style={{ animationDelay: `${i * 60}ms` } as React.CSSProperties}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
    FULL PAGE SKELETON  (exported)
 ───────────────────────────────────────────── */
 export default function ProgressPageSkeleton() {
@@ -289,6 +376,7 @@ export default function ProgressPageSkeleton() {
         <Pulse className="h-4 w-80" />
       </div>
 
+      <ComprehensiveProgressSkeleton />
       <WeightTrendSkeleton />
       <BodyMeasurementsSkeleton />
       <MonthlySummarySkeleton />
@@ -313,4 +401,5 @@ export {
   MonthlySummarySkeleton,
   StreakCounterSkeleton,
   AchievementBadgesSkeleton,
+  ComprehensiveProgressSkeleton,
 };
