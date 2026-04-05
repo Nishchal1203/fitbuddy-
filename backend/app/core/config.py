@@ -13,6 +13,12 @@ class Settings(BaseSettings):
 	jwt_secret_key: str = Field(default="devsupersecret", validation_alias="JWT_SECRET_KEY")
 	jwt_algorithm: str = Field(default="HS256", validation_alias="JWT_ALGORITHM")
 	access_token_expire_minutes: int = Field(default=60, validation_alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+	refresh_token_expire_days: int = Field(default=30, validation_alias="REFRESH_TOKEN_EXPIRE_DAYS")
+	auth_cookie_secure: bool = Field(default=False, validation_alias="AUTH_COOKIE_SECURE")
+	frontend_base_url: str = Field(default="http://localhost:3000", validation_alias="FRONTEND_BASE_URL")
+	google_client_id: str = Field(default="", validation_alias="GOOGLE_CLIENT_ID")
+	google_client_secret: str = Field(default="", validation_alias="GOOGLE_CLIENT_SECRET")
+	google_redirect_uri: str = Field(default="http://localhost:8000/api/auth/google/callback", validation_alias="GOOGLE_REDIRECT_URI")
 
 	cerebras_api_key: str = Field(default="", validation_alias="CEREBRAS_API_KEY")
 	cerebras_base_url: str = Field(default="https://api.cerebras.ai/v1", validation_alias="CEREBRAS_BASE_URL")

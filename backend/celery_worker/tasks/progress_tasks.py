@@ -1,4 +1,3 @@
-from celery import current_task
 from celery_worker.celery_app import celery_app
 from app.services.redis_service import redis_service
 from app.db.session import SessionLocal
@@ -12,6 +11,10 @@ from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
+
+def _start_of_day(dt: datetime) -> datetime:
+    return dt.replace(hour=0, minute=0, second=0, microsecond=0)
+
 @celery_app.task(bind=True, name='celery_worker.tasks.progress_tasks.analyze_weekly_progress')
 def analyze_weekly_progress(self, user_id: int, week_start_date: str = None):
     """
@@ -22,13 +25,13 @@ def analyze_weekly_progress(self, user_id: int, week_start_date: str = None):
         
         # Parse week start date or use current week
         if week_start_date:
-            week_start = datetime.fromisoformat(week_start_date)
+            week_start = _start_of_day(datetime.fromisoformat(week_start_date))
         else:
             # Get start of current week (Monday)
             today = datetime.now()
-            week_start = today - timedelta(days=today.weekday())
+            week_start = _start_of_day(today - timedelta(days=today.weekday()))
         
-        week_end = week_start + timedelta(days=6)
+        week_end_exclusive = week_start + timedelta(days=7)
         
         db = SessionLocal()
         
@@ -44,7 +47,7 @@ def analyze_weekly_progress(self, user_id: int, week_start_date: str = None):
                 select(WorkoutSession)
                 .where(WorkoutSession.owner_id == user_id)
                 .where(WorkoutSession.performed_at >= week_start)
-                .where(WorkoutSession.performed_at <= week_end)
+                .where(WorkoutSession.performed_at < week_end_exclusive)
             ).scalars().all()
             
             # Get active goals
@@ -82,7 +85,7 @@ def analyze_weekly_progress(self, user_id: int, week_start_date: str = None):
             analysis = {
                 "user_id": user_id,
                 "week_start": week_start.isoformat(),
-                "week_end": week_end.isoformat(),
+                "week_end": (week_end_exclusive - timedelta(microseconds=1)).isoformat(),
                 "analysis_date": datetime.now().isoformat(),
                 "workout_summary": {
                     "total_workouts": total_workouts,
@@ -132,17 +135,17 @@ def analyze_monthly_progress(self, user_id: int, month_start_date: str = None):
         
         # Parse month start date or use current month
         if month_start_date:
-            month_start = datetime.fromisoformat(month_start_date)
+            month_start = _start_of_day(datetime.fromisoformat(month_start_date))
         else:
             # Get start of current month
             today = datetime.now()
-            month_start = today.replace(day=1)
+            month_start = _start_of_day(today.replace(day=1))
         
-        # Calculate month end
+        # Calculate end-exclusive month boundary
         if month_start.month == 12:
-            month_end = month_start.replace(year=month_start.year + 1, month=1) - timedelta(days=1)
+            month_end_exclusive = month_start.replace(year=month_start.year + 1, month=1)
         else:
-            month_end = month_start.replace(month=month_start.month + 1) - timedelta(days=1)
+            month_end_exclusive = month_start.replace(month=month_start.month + 1)
         
         db = SessionLocal()
         
@@ -158,7 +161,7 @@ def analyze_monthly_progress(self, user_id: int, month_start_date: str = None):
                 select(WorkoutSession)
                 .where(WorkoutSession.owner_id == user_id)
                 .where(WorkoutSession.performed_at >= month_start)
-                .where(WorkoutSession.performed_at <= month_end)
+                .where(WorkoutSession.performed_at < month_end_exclusive)
             ).scalars().all()
             
             # Get goals
@@ -166,7 +169,7 @@ def analyze_monthly_progress(self, user_id: int, month_start_date: str = None):
                 select(Goal)
                 .where(Goal.owner_id == user_id)
                 .where(Goal.target_date >= month_start)
-                .where(Goal.target_date <= month_end)
+                .where(Goal.target_date < month_end_exclusive)
             ).scalars().all()
             
             # Calculate monthly metrics
@@ -195,7 +198,7 @@ def analyze_monthly_progress(self, user_id: int, month_start_date: str = None):
             analysis = {
                 "user_id": user_id,
                 "month_start": month_start.isoformat(),
-                "month_end": month_end.isoformat(),
+                "month_end": (month_end_exclusive - timedelta(microseconds=1)).isoformat(),
                 "analysis_date": datetime.now().isoformat(),
                 "monthly_summary": {
                     "total_workouts": total_workouts,
@@ -203,7 +206,11 @@ def analyze_monthly_progress(self, user_id: int, month_start_date: str = None):
                     "total_calories_burned": total_calories,
                     "avg_workouts_per_week": total_workouts / 4.33,  # Average weeks per month
                     "avg_duration_per_workout": total_duration / max(total_workouts, 1),
-                    "workout_consistency": calculate_consistency_score(workouts, month_start, month_end)
+                    "workout_consistency": calculate_consistency_score(
+                        workouts,
+                        month_start,
+                        month_end_exclusive - timedelta(microseconds=1),
+                    )
                 },
                 "weekly_breakdown": weekly_stats,
                 "goal_analysis": {

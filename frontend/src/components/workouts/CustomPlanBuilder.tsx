@@ -230,7 +230,8 @@ export default function CustomPlanBuilder({
           : formData.title.trim();
       const normalizedDescription =
         builderMode === "ai"
-          ? formData.description.trim() || `AI-generated workout from prompt: ${aiPrompt || "custom fitness goal"}`
+          ? formData.description.trim() ||
+            `AI-generated workout from prompt: ${aiPrompt || "custom fitness goal"}`
           : formData.description.trim();
 
       const selectedExercises: PlanExercise[] = exerciseRows
@@ -318,7 +319,11 @@ export default function CustomPlanBuilder({
         <Input
           name="title"
           label="Plan Title"
-          placeholder={builderMode === "ai" ? "Optional: leave blank to auto-generate" : "e.g. Summer Body Shred"}
+          placeholder={
+            builderMode === "ai"
+              ? "Optional: leave blank to auto-generate"
+              : "e.g. Summer Body Shred"
+          }
           value={formData.title}
           onChange={handleChange}
           required={builderMode !== "ai"}
@@ -391,7 +396,8 @@ export default function CustomPlanBuilder({
               required={builderMode === "ai"}
             />
             <p className="text-xs text-gray-500">
-              AI-generated plans are created on backend and added to your active plans.
+              AI-generated plans are created on backend and added to your active
+              plans.
             </p>
           </div>
         ) : (

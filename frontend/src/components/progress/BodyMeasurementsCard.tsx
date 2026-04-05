@@ -1,12 +1,16 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { TrendingDown, TrendingUp, Minus, Ruler } from "lucide-react";
-import { API_BASE_URL, buildAuthHeaders } from "@/Utils/api";
+import {
+  Pencil,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  Minus,
+  Ruler,
+} from "lucide-react";
+import { API_BASE_URL, buildAuthHeaders, readErrorMessage } from "@/Utils/api";
 
-/* ─────────────────────────────────────────────
-   TYPES
-───────────────────────────────────────────── */
 type MeasurementKey =
   | "chest"
   | "waist"
@@ -18,8 +22,8 @@ type MeasurementKey =
 type MeasurementEntry = {
   key: MeasurementKey;
   label: string;
-  current: number; // cm
-  previous: number; // cm  — last recorded value for delta
+  current: number;
+  previous: number;
   unit: string;
   emoji: string;
 };
@@ -31,65 +35,32 @@ type ApiMeasurements = {
   biceps?: { current: number; previous: number };
   thighs?: { current: number; previous: number };
   shoulders?: { current: number; previous: number };
+  updated_at?: string;
 };
 
-/* ─────────────────────────────────────────────
-   FALLBACK DATA
-───────────────────────────────────────────── */
-const FALLBACK: MeasurementEntry[] = [
-  {
-    key: "chest",
-    label: "Chest",
-    current: 95,
-    previous: 97,
-    unit: "cm",
-    emoji: "",
-  },
-  {
-    key: "waist",
-    label: "Waist",
-    current: 80,
-    previous: 83,
-    unit: "cm",
-    emoji: "",
-  },
-  {
-    key: "hips",
-    label: "Hips",
-    current: 102,
-    previous: 103,
-    unit: "cm",
-    emoji: "",
-  },
-  {
-    key: "biceps",
-    label: "Biceps",
-    current: 30,
-    previous: 29,
-    unit: "cm",
-    emoji: "",
-  },
-  {
-    key: "thighs",
-    label: "Thighs",
-    current: 55,
-    previous: 56,
-    unit: "cm",
-    emoji: "",
-  },
-  {
-    key: "shoulders",
-    label: "Shoulders",
-    current: 112,
-    previous: 112,
-    unit: "cm",
-    emoji: "",
-  },
-];
+type MeasurementHistoryItem = {
+  id: number;
+  date: string;
+  weight?: number | null;
+  body_fat_percentage?: number | null;
+  chest?: number | null;
+  waist?: number | null;
+  arms?: number | null;
+  legs?: number | null;
+  notes?: string | null;
+};
 
-/* ─────────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────────── */
+type MeasurementFormState = {
+  date: string;
+  weight: string;
+  body_fat_percentage: string;
+  chest: string;
+  waist: string;
+  arms: string;
+  legs: string;
+  notes: string;
+};
+
 function parseMeasurements(api: ApiMeasurements): MeasurementEntry[] {
   const map: { key: MeasurementKey; label: string; emoji: string }[] = [
     { key: "chest", label: "Chest", emoji: "💪" },
@@ -110,9 +81,6 @@ function parseMeasurements(api: ApiMeasurements): MeasurementEntry[] {
     }));
 }
 
-/* ─────────────────────────────────────────────
-   SINGLE MEASUREMENT TILE
-───────────────────────────────────────────── */
 function MeasurementTile({ entry }: { entry: MeasurementEntry }) {
   const delta = +(entry.current - entry.previous).toFixed(1);
   const isDown = delta < 0;
@@ -121,7 +89,6 @@ function MeasurementTile({ entry }: { entry: MeasurementEntry }) {
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-brand-pale bg-white p-4 shadow-[0_2px_12px_-4px_#9567B920]">
-      {/* label + emoji */}
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-widest text-brand-slate/50">
           {entry.label}
@@ -129,7 +96,6 @@ function MeasurementTile({ entry }: { entry: MeasurementEntry }) {
         <span className="text-base">{entry.emoji}</span>
       </div>
 
-      {/* current value */}
       <div>
         <span className="text-2xl font-bold text-brand-slate">
           {entry.current}
@@ -139,13 +105,12 @@ function MeasurementTile({ entry }: { entry: MeasurementEntry }) {
         </span>
       </div>
 
-      {/* delta indicator */}
       <div
-        className={`flex items-center gap-1 rounded-lg px-2 py-1 w-fit text-xs font-semibold ${
+        className={`flex w-fit items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${
           isDown
-            ? "bg-green-50 text-green-600" // shrinking = good (waist/hips)
+            ? "bg-green-50 text-green-600"
             : isUp
-              ? "bg-[#FCB60F]/10 text-[#FCB60F]" // growing = good (biceps/chest)
+              ? "bg-[#FCB60F]/10 text-[#FCB60F]"
               : "bg-brand-bg text-brand-slate/45"
         }`}
       >
@@ -155,7 +120,6 @@ function MeasurementTile({ entry }: { entry: MeasurementEntry }) {
         <span>{same ? "No change" : `${isUp ? "+" : ""}${delta} cm`}</span>
       </div>
 
-      {/* previous value note */}
       <p className="text-[10px] text-brand-slate/35">
         Previous: {entry.previous} {entry.unit}
       </p>
@@ -163,9 +127,6 @@ function MeasurementTile({ entry }: { entry: MeasurementEntry }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   SKELETON TILE
-───────────────────────────────────────────── */
 function SkeletonTile() {
   return (
     <div className="animate-pulse rounded-2xl border border-brand-pale bg-white p-4">
@@ -176,30 +137,55 @@ function SkeletonTile() {
   );
 }
 
-/* ─────────────────────────────────────────────
-   COMPONENT
-───────────────────────────────────────────── */
 export default function BodyMeasurementsCard() {
   const [measurements, setMeasurements] = useState<MeasurementEntry[]>([]);
+  const [history, setHistory] = useState<MeasurementHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isFallback, setIsFallback] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [selectedMeasurementId, setSelectedMeasurementId] = useState<
+    number | null
+  >(null);
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const [form, setForm] = useState<MeasurementFormState>({
+    date: new Date().toISOString().slice(0, 10),
+    weight: "",
+    body_fat_percentage: "",
+    chest: "",
+    waist: "",
+    arms: "",
+    legs: "",
+    notes: "",
+  });
+
+  const toOptionalNumber = (value: string): number | null => {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/user/measurements`, {
-        headers: buildAuthHeaders(),
-      });
-
-      if (!res.ok) throw new Error("API error");
-
-      const json: ApiMeasurements & { updated_at?: string } = await res.json();
-
+      const res = await fetch(
+        `${API_BASE_URL}/api/progress/measurements/card`,
+        {
+          headers: buildAuthHeaders(),
+        },
+      );
+      if (!res.ok) {
+        setError(await readErrorMessage(res, "Could not load measurements"));
+        setMeasurements([]);
+        setLastUpdated(null);
+        return;
+      }
+      const json: ApiMeasurements = await res.json();
       const parsed = parseMeasurements(json);
-      setMeasurements(parsed.length ? parsed : FALLBACK);
-      setIsFallback(!parsed.length);
-
+      setMeasurements(parsed);
       if (json.updated_at) {
         setLastUpdated(
           new Date(json.updated_at).toLocaleDateString("en-GB", {
@@ -208,22 +194,138 @@ export default function BodyMeasurementsCard() {
             year: "numeric",
           }),
         );
+      } else {
+        setLastUpdated(null);
+      }
+
+      const historyRes = await fetch(
+        `${API_BASE_URL}/api/progress/measurements/history?limit=6`,
+        {
+          headers: buildAuthHeaders(),
+        },
+      );
+      if (historyRes.ok) {
+        const historyJson =
+          (await historyRes.json()) as MeasurementHistoryItem[];
+        setHistory(historyJson);
+      } else {
+        setHistory([]);
       }
     } catch {
-      setMeasurements(FALLBACK);
-      setIsFallback(true);
+      setError("Network error while loading measurements");
+      setMeasurements([]);
+      setHistory([]);
+      setLastUpdated(null);
     } finally {
       setLoading(false);
     }
   }, []);
 
+  const resetForm = useCallback(() => {
+    setSelectedMeasurementId(null);
+    setForm({
+      date: new Date().toISOString().slice(0, 10),
+      weight: "",
+      body_fat_percentage: "",
+      chest: "",
+      waist: "",
+      arms: "",
+      legs: "",
+      notes: "",
+    });
+  }, []);
+
+  const fillFormFromMeasurement = useCallback(
+    (item: MeasurementHistoryItem) => {
+      setSelectedMeasurementId(item.id);
+      setForm({
+        date: item.date,
+        weight: item.weight?.toString() || "",
+        body_fat_percentage: item.body_fat_percentage?.toString() || "",
+        chest: item.chest?.toString() || "",
+        waist: item.waist?.toString() || "",
+        arms: item.arms?.toString() || "",
+        legs: item.legs?.toString() || "",
+        notes: item.notes || "",
+      });
+      setShowForm(true);
+      setSubmitMessage(null);
+    },
+    [],
+  );
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setSubmitMessage(null);
+
+    const payload = {
+      date: form.date,
+      weight: toOptionalNumber(form.weight),
+      body_fat_percentage: toOptionalNumber(form.body_fat_percentage),
+      chest: toOptionalNumber(form.chest),
+      waist: toOptionalNumber(form.waist),
+      arms: toOptionalNumber(form.arms),
+      legs: toOptionalNumber(form.legs),
+      notes: form.notes.trim() || null,
+    };
+
+    const hasAtLeastOneMetric = [
+      payload.weight,
+      payload.body_fat_percentage,
+      payload.chest,
+      payload.waist,
+      payload.arms,
+      payload.legs,
+    ].some((v) => v !== null);
+
+    if (!hasAtLeastOneMetric) {
+      setSubmitMessage("Please enter at least one measurement value.");
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      const isEditing = selectedMeasurementId !== null;
+      const res = await fetch(
+        isEditing
+          ? `${API_BASE_URL}/api/progress/measurements/${selectedMeasurementId}`
+          : `${API_BASE_URL}/api/progress/measurements`,
+        {
+          method: isEditing ? "PATCH" : "POST",
+          headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (!res.ok) {
+        setSubmitMessage(
+          await readErrorMessage(res, "Could not save measurement"),
+        );
+        setSubmitting(false);
+        return;
+      }
+
+      setSubmitMessage(
+        isEditing
+          ? "Measurement updated successfully."
+          : "Measurement logged successfully.",
+      );
+      resetForm();
+      await fetchData();
+    } catch {
+      setSubmitMessage("Network error while saving measurement");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="rounded-2xl bg-white p-5 shadow-[0_4px_20px_-4px_#9567B920]">
-      {/* ── Header ── */}
       <div className="mb-4 flex items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
@@ -234,13 +336,13 @@ export default function BodyMeasurementsCard() {
           </div>
           <p className="mt-1 text-xs text-brand-slate/50">
             {lastUpdated
-              ? `Last updated ${lastUpdated} · auto-synced from profile`
-              : "Auto-synced from your profile"}
+              ? `Last updated ${lastUpdated} · from your measurement history`
+              : "Compared to your previous logged entry"}
           </p>
         </div>
 
-        {/* overall summary pill */}
         {!loading &&
+          !error &&
           measurements.length > 0 &&
           (() => {
             const improved = measurements.filter(
@@ -249,26 +351,304 @@ export default function BodyMeasurementsCard() {
             return improved > 0 ? (
               <div className="flex items-center gap-1.5 rounded-xl bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-600">
                 <TrendingDown size={13} />
-                {improved} measurement{improved > 1 ? "s" : ""} improved
+                {improved} measurement{improved > 1 ? "s" : ""} down vs last log
               </div>
             ) : null;
           })()}
+
+        <button
+          type="button"
+          onClick={() => setShowForm((prev) => !prev)}
+          className="rounded-lg border border-brand-pale bg-brand-bg px-3 py-1.5 text-xs font-semibold text-brand-deep hover:bg-brand-pale"
+        >
+          {showForm ? "Hide logger" : "Log measurement"}
+        </button>
       </div>
 
-      {/* ── Grid ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {loading
-          ? [...Array(6)].map((_, i) => <SkeletonTile key={i} />)
-          : measurements.map((entry) => (
-              <MeasurementTile key={entry.key} entry={entry} />
-            ))}
-      </div>
+      {showForm && (
+        <form
+          onSubmit={handleSubmit}
+          className="mb-5 rounded-2xl border border-brand-pale bg-brand-bg p-4"
+        >
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="text-xs text-brand-slate/70">
+              Date
+              <input
+                type="date"
+                value={form.date}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, date: e.target.value }))
+                }
+                className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
+                required
+              />
+            </label>
 
-      {/* ── Fallback note ── */}
-      {isFallback && !loading && (
-        <p className="mt-3 text-center text-[11px] text-brand-slate/35">
-          Showing sample data · log a workout to auto-update measurements
-        </p>
+            <label className="text-xs text-brand-slate/70">
+              Weight (kg)
+              <input
+                type="number"
+                step="0.1"
+                value={form.weight}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, weight: e.target.value }))
+                }
+                className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
+              />
+            </label>
+
+            <label className="text-xs text-brand-slate/70">
+              Body Fat (%)
+              <input
+                type="number"
+                step="0.1"
+                value={form.body_fat_percentage}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    body_fat_percentage: e.target.value,
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
+              />
+            </label>
+
+            <label className="text-xs text-brand-slate/70">
+              Chest (cm)
+              <input
+                type="number"
+                step="0.1"
+                value={form.chest}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, chest: e.target.value }))
+                }
+                className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
+              />
+            </label>
+
+            <label className="text-xs text-brand-slate/70">
+              Waist (cm)
+              <input
+                type="number"
+                step="0.1"
+                value={form.waist}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, waist: e.target.value }))
+                }
+                className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
+              />
+            </label>
+
+            <label className="text-xs text-brand-slate/70">
+              Arms (cm)
+              <input
+                type="number"
+                step="0.1"
+                value={form.arms}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, arms: e.target.value }))
+                }
+                className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
+              />
+            </label>
+
+            <label className="text-xs text-brand-slate/70">
+              Legs (cm)
+              <input
+                type="number"
+                step="0.1"
+                value={form.legs}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, legs: e.target.value }))
+                }
+                className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
+              />
+            </label>
+
+            <label className="text-xs text-brand-slate/70 sm:col-span-2 lg:col-span-1">
+              Notes
+              <input
+                type="text"
+                value={form.notes}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, notes: e.target.value }))
+                }
+                className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
+                placeholder="Optional"
+              />
+            </label>
+          </div>
+
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-lg bg-brand-purple px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-deep disabled:opacity-60"
+            >
+              {submitting
+                ? "Saving..."
+                : selectedMeasurementId
+                  ? "Update measurement"
+                  : "Save measurement"}
+            </button>
+            {selectedMeasurementId && (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="rounded-lg border border-brand-pale bg-white px-3 py-1.5 text-xs font-semibold text-brand-slate hover:bg-brand-bg"
+              >
+                Cancel edit
+              </button>
+            )}
+            {submitMessage && (
+              <p className="text-xs text-brand-slate/70">{submitMessage}</p>
+            )}
+          </div>
+        </form>
+      )}
+
+      {loading ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {[...Array(6)].map((_, i) => (
+            <SkeletonTile key={i} />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+          <p className="text-sm font-medium text-brand-slate">{error}</p>
+          <button
+            type="button"
+            onClick={() => fetchData()}
+            className="text-xs font-semibold text-brand-purple hover:underline"
+          >
+            Try again
+          </button>
+        </div>
+      ) : measurements.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+          <p className="text-sm font-medium text-brand-slate">
+            No measurements to show
+          </p>
+          <p className="max-w-md text-xs text-brand-slate/50">
+            Log chest, waist, arms, or legs on two different days to see current
+            values and change vs your previous entry.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {measurements.map((entry) => (
+            <MeasurementTile key={entry.key} entry={entry} />
+          ))}
+        </div>
+      )}
+
+      {!loading && !error && history.length > 0 && (
+        <div className="mt-5 overflow-hidden rounded-2xl border border-brand-pale bg-white">
+          <div className="border-b border-brand-pale px-4 py-3">
+            <p className="text-sm font-semibold text-brand-slate">
+              Recent logs
+            </p>
+            <p className="text-xs text-brand-slate/50">
+              Latest measurement entries you saved
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-brand-pale text-left text-sm">
+              <thead className="bg-brand-bg text-xs uppercase tracking-wider text-brand-slate/50">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Date</th>
+                  <th className="px-4 py-3 font-semibold">Weight</th>
+                  <th className="px-4 py-3 font-semibold">Body fat</th>
+                  <th className="px-4 py-3 font-semibold">Chest</th>
+                  <th className="px-4 py-3 font-semibold">Waist</th>
+                  <th className="px-4 py-3 font-semibold">Arms</th>
+                  <th className="px-4 py-3 font-semibold">Legs</th>
+                  <th className="px-4 py-3 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-brand-pale bg-white text-brand-slate">
+                {history.map((item) => (
+                  <tr key={item.id} className="hover:bg-brand-bg/60">
+                    <td className="px-4 py-3 font-medium">
+                      {new Date(item.date).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td className="px-4 py-3">{item.weight ?? "-"}</td>
+                    <td className="px-4 py-3">
+                      {item.body_fat_percentage ?? "-"}
+                    </td>
+                    <td className="px-4 py-3">{item.chest ?? "-"}</td>
+                    <td className="px-4 py-3">{item.waist ?? "-"}</td>
+                    <td className="px-4 py-3">{item.arms ?? "-"}</td>
+                    <td className="px-4 py-3">{item.legs ?? "-"}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => fillFormFromMeasurement(item)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-brand-pale bg-white px-2 py-1 text-xs font-semibold text-brand-deep hover:bg-brand-bg"
+                        >
+                          <Pencil size={12} />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const confirmed = window.confirm(
+                              "Delete this measurement entry?",
+                            );
+                            if (!confirmed) return;
+
+                            try {
+                              const response = await fetch(
+                                `${API_BASE_URL}/api/progress/measurements/${item.id}`,
+                                {
+                                  method: "DELETE",
+                                  headers: buildAuthHeaders(),
+                                },
+                              );
+
+                              if (!response.ok) {
+                                setSubmitMessage(
+                                  await readErrorMessage(
+                                    response,
+                                    "Could not delete measurement",
+                                  ),
+                                );
+                                return;
+                              }
+
+                              if (selectedMeasurementId === item.id) {
+                                resetForm();
+                              }
+
+                              setSubmitMessage(
+                                "Measurement deleted successfully.",
+                              );
+                              await fetchData();
+                            } catch {
+                              setSubmitMessage(
+                                "Network error while deleting measurement",
+                              );
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 size={12} />
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1,17 +1,31 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import logo from "../../assets/Logo_full.svg";
+import googleIcon from "../../assets/google.svg";
+import { setAuthToken } from "@/Utils/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const googleError = searchParams.get("google_error");
+    if (googleError) {
+      setError(googleError);
+    }
+  }, [searchParams]);
+
+  function handleGoogleSignIn() {
+    window.location.href = `${API_BASE_URL}/api/auth/google/start`;
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,6 +43,7 @@ export default function LoginPage() {
 
       const response = await fetch(`${API_BASE_URL}/api/auth/token`, {
         method: "POST",
+        credentials: "include",
         body: formData,
       });
 
@@ -38,7 +53,7 @@ export default function LoginPage() {
       }
 
       const tokenData = await response.json();
-      localStorage.setItem("access_token", tokenData.access_token);
+      setAuthToken(tokenData.access_token);
       router.replace("/dashboard");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -79,6 +94,23 @@ export default function LoginPage() {
             {error}
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl border border-brand-pale bg-white px-4 py-3 text-sm font-semibold text-brand-slate transition hover:border-brand-soft hover:bg-brand-bg"
+          aria-label="Sign in with Google"
+          title="Continue with Google"
+        >
+          <Image src={googleIcon} alt="Google" width={18} height={18} />
+          <span>Sign in with Google</span>
+        </button>
+
+        <div className="mb-4 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.25em] text-brand-slate/40">
+          <span className="h-px flex-1 bg-brand-pale" />
+          <span>or use email</span>
+          <span className="h-px flex-1 bg-brand-pale" />
+        </div>
 
         <form
           onSubmit={handleSubmit}

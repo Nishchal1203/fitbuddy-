@@ -46,16 +46,28 @@ export default function GoalDetailsModal({
 
         <div className="grid grid-cols-1 gap-3 rounded-xl border border-brand-pale bg-brand-bg/40 p-3 sm:grid-cols-3">
           <div>
-            <p className="text-xs uppercase tracking-wide text-brand-slate/50">Current</p>
-            <p className="text-sm font-bold text-brand-slate">{goal.currentValue} {goal.unit}</p>
+            <p className="text-xs uppercase tracking-wide text-brand-slate/50">
+              Current
+            </p>
+            <p className="text-sm font-bold text-brand-slate">
+              {goal.currentValue} {goal.unit}
+            </p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wide text-brand-slate/50">Target</p>
-            <p className="text-sm font-bold text-brand-slate">{goal.targetValue} {goal.unit}</p>
+            <p className="text-xs uppercase tracking-wide text-brand-slate/50">
+              Target
+            </p>
+            <p className="text-sm font-bold text-brand-slate">
+              {goal.targetValue} {goal.unit}
+            </p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wide text-brand-slate/50">Due</p>
-            <p className="text-sm font-bold text-brand-slate">{goal.dueLabel}</p>
+            <p className="text-xs uppercase tracking-wide text-brand-slate/50">
+              Due
+            </p>
+            <p className="text-sm font-bold text-brand-slate">
+              {goal.dueLabel}
+            </p>
           </div>
         </div>
 
@@ -65,7 +77,10 @@ export default function GoalDetailsModal({
           </p>
           <ul className="space-y-2">
             {goal.steps.map((step, index) => (
-              <li key={`${goal.id}-${index}`} className="flex items-start gap-2 text-sm text-brand-slate/80">
+              <li
+                key={`${goal.id}-${index}`}
+                className="flex items-start gap-2 text-sm text-brand-slate/80"
+              >
                 <span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-brand-pale text-xs font-bold text-brand-purple">
                   {index + 1}
                 </span>
@@ -84,7 +99,11 @@ export default function GoalDetailsModal({
             <Trash2 size={14} />
             Delete
           </Button>
-          <Button type="button" variant="secondary" onClick={() => onMarkComplete(goal)}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => onMarkComplete(goal)}
+          >
             <Check size={14} />
             Mark Complete
           </Button>

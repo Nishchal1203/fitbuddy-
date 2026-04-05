@@ -1,4 +1,3 @@
-from celery import current_task
 from celery_worker.celery_app import celery_app
 from app.services.redis_service import redis_service
 from app.db.session import SessionLocal

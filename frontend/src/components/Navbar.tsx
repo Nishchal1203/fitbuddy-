@@ -1,17 +1,54 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown, UserCircle2 } from "lucide-react";
 import { Button } from "@/components/ui";
 import LogoFull from "@/assets/Logo_full.svg";
 import Image from "next/image";
+import { API_BASE_URL, buildAuthHeaders, getAuthToken } from "@/Utils/api";
 
 export default function EnterpriseTopNav() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const avatarObjectUrlRef = useRef<string | null>(null);
+
+  const clearAvatarObjectUrl = useCallback(() => {
+    if (avatarObjectUrlRef.current) {
+      URL.revokeObjectURL(avatarObjectUrlRef.current);
+      avatarObjectUrlRef.current = null;
+    }
+  }, []);
+
+  const loadAvatar = useCallback(async () => {
+    if (!getAuthToken()) {
+      clearAvatarObjectUrl();
+      setAvatarSrc(null);
+      return;
+    }
+
+    clearAvatarObjectUrl();
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/users/me/avatar`, {
+        headers: buildAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        setAvatarSrc(null);
+        return;
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      avatarObjectUrlRef.current = objectUrl;
+      setAvatarSrc(objectUrl);
+    } catch {
+      setAvatarSrc(null);
+    }
+  }, [clearAvatarObjectUrl]);
 
   useEffect(() => {
     function onClickOutside(event: MouseEvent) {
@@ -34,6 +71,22 @@ export default function EnterpriseTopNav() {
       document.removeEventListener("keydown", onEscape);
     };
   }, []);
+
+  useEffect(() => {
+    loadAvatar();
+  }, [loadAvatar, pathname]);
+
+  useEffect(() => {
+    const onAvatarUpdated = () => {
+      loadAvatar();
+    };
+
+    window.addEventListener("profile-avatar-updated", onAvatarUpdated);
+    return () => {
+      window.removeEventListener("profile-avatar-updated", onAvatarUpdated);
+      clearAvatarObjectUrl();
+    };
+  }, [clearAvatarObjectUrl, loadAvatar]);
 
   const aiTrainerActive = pathname?.startsWith("/without_sidebar/AI_trainer");
 
@@ -64,7 +117,15 @@ export default function EnterpriseTopNav() {
               aria-expanded={isMenuOpen}
               aria-haspopup="menu"
             >
-              <UserCircle2 size={22} className="text-gray-600" />
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt="User avatar"
+                  className="h-[22px] w-[22px] rounded-full object-cover"
+                />
+              ) : (
+                <UserCircle2 size={22} className="text-gray-600" />
+              )}
               <ChevronDown size={16} className="text-gray-500" />
             </button>
 
@@ -73,14 +134,14 @@ export default function EnterpriseTopNav() {
                 className="absolute right-0 mt-2 w-44 rounded-xl border border-gray-200 bg-white p-1.5 shadow-lg"
                 role="menu"
               >
-                <button
-                  type="button"
+                <Link
+                  href="/dashboard/profile"
                   onClick={() => setIsMenuOpen(false)}
-                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+                  className="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
                   role="menuitem"
                 >
                   Edit profile
-                </button>
+                </Link>
               </div>
             )}
           </div>

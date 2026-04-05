@@ -1,4 +1,3 @@
-from celery import current_task
 from celery_worker.celery_app import celery_app
 from app.services.redis_service import redis_service
 from app.db.session import SessionLocal
@@ -13,6 +12,10 @@ import json
 
 logger = logging.getLogger(__name__)
 
+
+def _start_of_day(dt: datetime) -> datetime:
+    return dt.replace(hour=0, minute=0, second=0, microsecond=0)
+
 @celery_app.task(bind=True, name='celery_worker.tasks.report_tasks.generate_weekly_report')
 def generate_weekly_report(self, user_id: int, week_start_date: str = None):
     """
@@ -23,12 +26,12 @@ def generate_weekly_report(self, user_id: int, week_start_date: str = None):
         
         # Parse week start date or use current week
         if week_start_date:
-            week_start = datetime.fromisoformat(week_start_date)
+            week_start = _start_of_day(datetime.fromisoformat(week_start_date))
         else:
             today = datetime.now()
-            week_start = today - timedelta(days=today.weekday())
+            week_start = _start_of_day(today - timedelta(days=today.weekday()))
         
-        week_end = week_start + timedelta(days=6)
+        week_end_exclusive = week_start + timedelta(days=7)
         
         db = SessionLocal()
         
@@ -44,7 +47,7 @@ def generate_weekly_report(self, user_id: int, week_start_date: str = None):
                 select(WorkoutSession)
                 .where(WorkoutSession.owner_id == user_id)
                 .where(WorkoutSession.performed_at >= week_start)
-                .where(WorkoutSession.performed_at <= week_end)
+                .where(WorkoutSession.performed_at < week_end_exclusive)
                 .order_by(WorkoutSession.performed_at)
             ).scalars().all()
             
@@ -93,7 +96,7 @@ def generate_weekly_report(self, user_id: int, week_start_date: str = None):
                 "user_name": user.email,  # Using email as name placeholder
                 "week_period": {
                     "start_date": week_start.isoformat(),
-                    "end_date": week_end.isoformat(),
+                    "end_date": (week_end_exclusive - timedelta(microseconds=1)).isoformat(),
                     "generated_at": datetime.now().isoformat()
                 },
                 "summary": {
@@ -158,16 +161,16 @@ def generate_monthly_report(self, user_id: int, month_start_date: str = None):
         
         # Parse month start date or use current month
         if month_start_date:
-            month_start = datetime.fromisoformat(month_start_date)
+            month_start = _start_of_day(datetime.fromisoformat(month_start_date))
         else:
             today = datetime.now()
-            month_start = today.replace(day=1)
+            month_start = _start_of_day(today.replace(day=1))
         
-        # Calculate month end
+        # Calculate end-exclusive month boundary
         if month_start.month == 12:
-            month_end = month_start.replace(year=month_start.year + 1, month=1) - timedelta(days=1)
+            month_end_exclusive = month_start.replace(year=month_start.year + 1, month=1)
         else:
-            month_end = month_start.replace(month=month_start.month + 1) - timedelta(days=1)
+            month_end_exclusive = month_start.replace(month=month_start.month + 1)
         
         db = SessionLocal()
         
@@ -183,7 +186,7 @@ def generate_monthly_report(self, user_id: int, month_start_date: str = None):
                 select(WorkoutSession)
                 .where(WorkoutSession.owner_id == user_id)
                 .where(WorkoutSession.performed_at >= month_start)
-                .where(WorkoutSession.performed_at <= month_end)
+                .where(WorkoutSession.performed_at < month_end_exclusive)
                 .order_by(WorkoutSession.performed_at)
             ).scalars().all()
             
@@ -220,11 +223,19 @@ def generate_monthly_report(self, user_id: int, month_start_date: str = None):
                 weekly_stats[week_num]["total_calories"] += workout.calories_burned or 0
             
             # Goal analysis
-            monthly_goals = [g for g in goals if g.target_date and g.target_date >= month_start and g.target_date <= month_end]
+            monthly_goals = [
+                g
+                for g in goals
+                if g.target_date and g.target_date >= month_start and g.target_date < month_end_exclusive
+            ]
             completed_monthly_goals = [g for g in monthly_goals if g.is_completed]
             
             # Calculate trends
-            trends = calculate_monthly_trends_report(workouts, month_start, month_end)
+            trends = calculate_monthly_trends_report(
+                workouts,
+                month_start,
+                month_end_exclusive - timedelta(microseconds=1),
+            )
             
             # Generate insights
             insights = generate_monthly_insights(workouts, total_duration, total_calories, monthly_goals)
@@ -236,7 +247,7 @@ def generate_monthly_report(self, user_id: int, month_start_date: str = None):
                 "user_name": user.email,
                 "month_period": {
                     "start_date": month_start.isoformat(),
-                    "end_date": month_end.isoformat(),
+                    "end_date": (month_end_exclusive - timedelta(microseconds=1)).isoformat(),
                     "generated_at": datetime.now().isoformat()
                 },
                 "summary": {
@@ -245,7 +256,11 @@ def generate_monthly_report(self, user_id: int, month_start_date: str = None):
                     "total_calories_burned": total_calories,
                     "avg_workouts_per_week": total_workouts / 4.33,
                     "avg_duration_per_workout": total_duration / max(total_workouts, 1),
-                    "workout_consistency": calculate_consistency_score_report(workouts, month_start, month_end),
+                    "workout_consistency": calculate_consistency_score_report(
+                        workouts,
+                        month_start,
+                        month_end_exclusive - timedelta(microseconds=1),
+                    ),
                     "goals_set_this_month": len(monthly_goals),
                     "goals_completed_this_month": len(completed_monthly_goals)
                 },
@@ -364,6 +379,7 @@ def generate_monthly_reports_all_users(self):
 def generate_weekly_insights(workouts: List[WorkoutSession], total_duration: int, total_calories: int, goals: List[Goal]) -> List[str]:
     """Generate weekly insights."""
     insights = []
+    total_workouts = len(workouts)
     
     if total_workouts >= 5:
         insights.append("Excellent workout consistency this week!")

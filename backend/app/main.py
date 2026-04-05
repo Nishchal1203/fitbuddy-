@@ -10,6 +10,7 @@ from app.api.routes import goals as goals_routes
 from app.api.routes import users as users_routes
 from app.api.routes import workout_plans as workout_plans_routes
 from app.api.routes import progress as progress_routes
+from app.api.routes import user_dashboard as user_dashboard_routes
 from app.api.routes import health as health_routes
 from app.api.routes import reports as reports_routes
 from app.api.routes import nutrition as nutrition_routes
@@ -42,6 +43,9 @@ def on_startup():
     # Uses IF NOT EXISTS (PostgreSQL 9.6+) and individual try/except per statement
     # so a single failure never blocks the remaining patches.
     _ddl_statements = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(32) NOT NULL DEFAULT 'local'",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub VARCHAR(255)",
+        "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_google_sub ON users (google_sub)",
         "ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS duration_minutes INTEGER",
         "ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS calories_burned NUMERIC",
         "ALTER TABLE workouts ADD COLUMN IF NOT EXISTS level VARCHAR(50)",
@@ -84,6 +88,7 @@ app.include_router(exercises_routes.router, prefix="/api")
 app.include_router(workouts_routes.router, prefix="/api")
 app.include_router(goals_routes.router, prefix="/api")
 app.include_router(progress_routes.router, prefix="/api")
+app.include_router(user_dashboard_routes.router, prefix="/api")
 app.include_router(users_routes.router, prefix="/api")
 app.include_router(workout_plans_routes.router, prefix="/api")
 app.include_router(health_routes.router, prefix="/api")

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import logo from "../../assets/Logo_full.svg";
+import googleIcon from "../../assets/google.svg";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -13,6 +14,10 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  function handleGoogleSignUp() {
+    window.location.href = `${API_BASE_URL}/api/auth/google/start`;
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -96,6 +101,23 @@ export default function SignupPage() {
             {success}
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={handleGoogleSignUp}
+          className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl border border-brand-pale bg-white px-4 py-3 text-sm font-semibold text-brand-slate transition hover:border-brand-soft hover:bg-brand-bg"
+          aria-label="Sign up with Google"
+          title="Continue with Google"
+        >
+          <Image src={googleIcon} alt="Google" width={18} height={18} />
+          <span>Sign up with Google</span>
+        </button>
+
+        <div className="mb-4 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.25em] text-brand-slate/40">
+          <span className="h-px flex-1 bg-brand-pale" />
+          <span>or use email</span>
+          <span className="h-px flex-1 bg-brand-pale" />
+        </div>
 
         <form
           onSubmit={handleSubmit}

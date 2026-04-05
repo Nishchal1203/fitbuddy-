@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { StaticImageData } from "next/image";
+import type { LucideIcon } from "lucide-react";
 import collapser from "../assets/collapser.svg";
 import Dietplan from "../assets/Dietplan.svg";
 //import schedule from '../assets/calendar.svg'
@@ -12,6 +13,7 @@ import progress from "../assets/progress.svg";
 import workout from "../assets/workouts.svg";
 import overview from "../assets/dashboard.svg";
 import LogOut from "../assets/logout.svg";
+import { UserCircle2 } from "lucide-react";
 
 type SidebarProps = {
   activePath: string;
@@ -23,7 +25,7 @@ type SidebarProps = {
 type SidebarNavItem = {
   href: string;
   label: string;
-  icon?: React.ComponentType<{ size?: number; className?: string }>;
+  icon?: LucideIcon;
   imageIcon?: StaticImageData;
 };
 
@@ -39,6 +41,7 @@ export default function Sidebar({
     { href: "/dashboard/plans", label: "Diet Plan", imageIcon: Dietplan },
     { href: "/dashboard/goals", label: "Goals", imageIcon: Goals },
     { href: "/dashboard/progress", label: "Progress", imageIcon: progress },
+    //{ href: "/dashboard/profile", label: "Profile", icon: UserCircle2 },
   ];
 
   return (
@@ -68,7 +71,9 @@ export default function Sidebar({
         />
       </button>
 
-      <nav className={`flex-1 overflow-y-auto ${isCollapsed ? "px-2 pt-2" : "px-3 pt-3"}`}>
+      <nav
+        className={`flex-1 overflow-y-auto ${isCollapsed ? "px-2 pt-2" : "px-3 pt-3"}`}
+      >
         <ul className="space-y-1">
           {navItems.map(({ href, label, icon: Icon, imageIcon }) => {
             const isActive = activePath === href;

@@ -197,7 +197,9 @@ export default function AddGoalModal({
           id="goal-steps"
           name="goal-steps"
           label="How to Follow This Goal (one step per line)"
-          placeholder={"Plan weekly sessions\nTrack progress every Sunday\nAdjust intensity every 2 weeks"}
+          placeholder={
+            "Plan weekly sessions\nTrack progress every Sunday\nAdjust intensity every 2 weeks"
+          }
           rows={4}
           value={form.steps}
           onChange={(event) => updateField("steps", event.target.value)}

@@ -32,7 +32,8 @@ def process_trainer_chat_response(self, user_id: int, conversation_id: int, user
         if not user_message:
             raise ValueError("User message not found")
 
-        context = trainer_chat_service.build_user_context(db, user_id)
+        # Build context ONLY from current conversation (don't pollute with global user data)
+        context = trainer_chat_service.build_user_context(db, user_id, conversation_id=conversation_id)
         history = trainer_chat_service.build_conversation_history(db, conversation_id, limit=24)
 
         ai_result = trainer_chat_ai_service.generate_reply(

@@ -277,7 +277,9 @@ function MealItemRow({ item }: { item: MealItem }) {
     <div className="space-y-1.5">
       <p className="text-sm font-medium text-brand-slate">
         {item.name},{" "}
-        <span className="font-normal text-brand-slate/55">{item.kcal} Kcal</span>
+        <span className="font-normal text-brand-slate/55">
+          {item.kcal} Kcal
+        </span>
       </p>
       <div className="flex flex-wrap gap-1.5">
         {item.macros.map((m) => (
@@ -344,7 +346,8 @@ function LoggedMealRow({
 
       <p className="text-sm font-semibold text-brand-slate">{meal.item.name}</p>
       <p className="text-xs text-brand-slate/55">
-        {meal.item.kcal} kcal · P {meal.item.protein_g}g · C {meal.item.carbs_g}g · F {meal.item.fat_g}g
+        {meal.item.kcal} kcal · P {meal.item.protein_g}g · C {meal.item.carbs_g}
+        g · F {meal.item.fat_g}g
       </p>
     </div>
   );
@@ -366,14 +369,27 @@ export default function DietPlanPage() {
   const todayKey = getDateKey(new Date());
 
   const [selectedDate, setSelectedDate] = useState(todayKey);
-  const [plannedSectionsByDate, setPlannedSectionsByDate] = useState<Record<string, MealSection[]>>({
-    [todayKey]: INITIAL_MEALS.map((section) => ({ ...section, items: [...section.items] })),
+  const [plannedSectionsByDate, setPlannedSectionsByDate] = useState<
+    Record<string, MealSection[]>
+  >({
+    [todayKey]: INITIAL_MEALS.map((section) => ({
+      ...section,
+      items: [...section.items],
+    })),
   });
-  const [logsByDate, setLogsByDate] = useState<Record<string, LoggedMeal[]>>({});
-  const [waterByDateMl, setWaterByDateMl] = useState<Record<string, number>>({});
+  const [logsByDate, setLogsByDate] = useState<Record<string, LoggedMeal[]>>(
+    {},
+  );
+  const [waterByDateMl, setWaterByDateMl] = useState<Record<string, number>>(
+    {},
+  );
   const [isSyncingDate, setIsSyncingDate] = useState(false);
   const [goalCalories, setGoalCalories] = useState(2200);
-  const [goalMacros, setGoalMacros] = useState({ protein: 180, carbs: 300, fat: 70 });
+  const [goalMacros, setGoalMacros] = useState({
+    protein: 180,
+    carbs: 300,
+    fat: 70,
+  });
   const [goalHydrationMl, setGoalHydrationMl] = useState(2500);
   const [cupSizeMl, setCupSizeMl] = useState(250);
   const [weightKg, setWeightKg] = useState(70);
@@ -386,12 +402,18 @@ export default function DietPlanPage() {
   const plannedSections = useMemo(
     () =>
       plannedSectionsByDate[selectedDate] ||
-      INITIAL_MEALS.map((section) => ({ ...section, items: [...section.items] })),
+      INITIAL_MEALS.map((section) => ({
+        ...section,
+        items: [...section.items],
+      })),
     [plannedSectionsByDate, selectedDate],
   );
 
   const selectedLogs = useMemo(
-    () => [...(logsByDate[selectedDate] || [])].sort((a, b) => a.loggedAt.localeCompare(b.loggedAt)),
+    () =>
+      [...(logsByDate[selectedDate] || [])].sort((a, b) =>
+        a.loggedAt.localeCompare(b.loggedAt),
+      ),
     [logsByDate, selectedDate],
   );
 
@@ -438,23 +460,29 @@ export default function DietPlanPage() {
 
       setIsSyncingDate(true);
       try {
-        const [mealsResponse, hydrationResponse, summaryResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/nutrition/meals?date=${selectedDate}`, {
-            headers: buildAuthHeaders(),
-          }),
-          fetch(
-            `${API_BASE_URL}/api/nutrition/hydration?date=${selectedDate}&cup_size_ml=${cupSizeMl}&goal_ml=${goalHydrationMl}`,
-            {
+        const [mealsResponse, hydrationResponse, summaryResponse] =
+          await Promise.all([
+            fetch(`${API_BASE_URL}/api/nutrition/meals?date=${selectedDate}`, {
               headers: buildAuthHeaders(),
-            },
-          ),
-          fetch(`${API_BASE_URL}/api/nutrition/summary?date=${selectedDate}`, {
-            headers: buildAuthHeaders(),
-          }),
-        ]);
+            }),
+            fetch(
+              `${API_BASE_URL}/api/nutrition/hydration?date=${selectedDate}&cup_size_ml=${cupSizeMl}&goal_ml=${goalHydrationMl}`,
+              {
+                headers: buildAuthHeaders(),
+              },
+            ),
+            fetch(
+              `${API_BASE_URL}/api/nutrition/summary?date=${selectedDate}`,
+              {
+                headers: buildAuthHeaders(),
+              },
+            ),
+          ]);
 
         if (mealsResponse.ok) {
-          const mealsData = (await mealsResponse.json()) as { meals: MealApiItem[] };
+          const mealsData = (await mealsResponse.json()) as {
+            meals: MealApiItem[];
+          };
           setLogsByDate((prev) => ({
             ...prev,
             [selectedDate]: mealsData.meals.map(mapApiMealToLoggedMeal),
@@ -462,7 +490,8 @@ export default function DietPlanPage() {
         }
 
         if (hydrationResponse.ok) {
-          const hydration = (await hydrationResponse.json()) as HydrationSummaryResponse;
+          const hydration =
+            (await hydrationResponse.json()) as HydrationSummaryResponse;
           setWaterByDateMl((prev) => ({
             ...prev,
             [selectedDate]: hydration.consumed_ml,
@@ -470,8 +499,11 @@ export default function DietPlanPage() {
         }
 
         if (summaryResponse.ok) {
-          const summary = (await summaryResponse.json()) as NutritionSummaryResponse;
-          setGoalCalories((prev) => (prev > 0 ? prev : Math.round(summary.consumed.calories)));
+          const summary =
+            (await summaryResponse.json()) as NutritionSummaryResponse;
+          setGoalCalories((prev) =>
+            prev > 0 ? prev : Math.round(summary.consumed.calories),
+          );
         }
       } catch {
         // Keep current local values when sync fails.
@@ -568,15 +600,18 @@ export default function DietPlanPage() {
     if (!token) return;
 
     try {
-      await fetch(`${API_BASE_URL}/api/nutrition/hydration?cup_size_ml=${cupSizeMl}`, {
-        method: "POST",
-        headers: buildAuthHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({
-          date: selectedDate,
-          amount_ml: deltaMl,
-          logged_at: new Date().toISOString(),
-        }),
-      });
+      await fetch(
+        `${API_BASE_URL}/api/nutrition/hydration?cup_size_ml=${cupSizeMl}`,
+        {
+          method: "POST",
+          headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({
+            date: selectedDate,
+            amount_ml: deltaMl,
+            logged_at: new Date().toISOString(),
+          }),
+        },
+      );
     } catch {
       // Preserve optimistic hydration value on request failure.
     }
@@ -594,7 +629,10 @@ export default function DietPlanPage() {
       setPlannedSectionsByDate((prev) => {
         const existing =
           prev[dateKey] ||
-          INITIAL_MEALS.map((section) => ({ ...section, items: [...section.items] }));
+          INITIAL_MEALS.map((section) => ({
+            ...section,
+            items: [...section.items],
+          }));
 
         return {
           ...prev,
@@ -687,7 +725,11 @@ export default function DietPlanPage() {
     if (typeof payload.calorie_target === "number") {
       setGoalCalories(Math.max(800, Math.round(payload.calorie_target)));
     }
-    if (typeof payload.protein_g === "number" || typeof payload.carbs_g === "number" || typeof payload.fat_g === "number") {
+    if (
+      typeof payload.protein_g === "number" ||
+      typeof payload.carbs_g === "number" ||
+      typeof payload.fat_g === "number"
+    ) {
       setGoalMacros({
         protein: Math.max(0, Number(payload.protein_g || 0)),
         carbs: Math.max(0, Number(payload.carbs_g || 0)),
@@ -695,9 +737,18 @@ export default function DietPlanPage() {
       });
     }
 
-    const calorieTarget = Math.max(1200, Number(payload.calorie_target || goalCalories));
-    const proteinTarget = Math.max(0, Number(payload.protein_g || goalMacros.protein));
-    const carbsTarget = Math.max(0, Number(payload.carbs_g || goalMacros.carbs));
+    const calorieTarget = Math.max(
+      1200,
+      Number(payload.calorie_target || goalCalories),
+    );
+    const proteinTarget = Math.max(
+      0,
+      Number(payload.protein_g || goalMacros.protein),
+    );
+    const carbsTarget = Math.max(
+      0,
+      Number(payload.carbs_g || goalMacros.carbs),
+    );
     const fatTarget = Math.max(0, Number(payload.fat_g || goalMacros.fat));
 
     const mealBreakdown =
@@ -719,7 +770,10 @@ export default function DietPlanPage() {
             if (!name) return null;
 
             const kcal = Math.max(0, Math.round(Number(raw.kcal || 0)));
-            const protein = Math.max(0, Number(raw.protein_g || raw.protein || 0));
+            const protein = Math.max(
+              0,
+              Number(raw.protein_g || raw.protein || 0),
+            );
             const carbs = Math.max(0, Number(raw.carbs_g || raw.carbs || 0));
             const fat = Math.max(0, Number(raw.fat_g || raw.fat || 0));
 
@@ -727,9 +781,21 @@ export default function DietPlanPage() {
               name,
               kcal,
               macros: [
-                { label: "Protein", value: `${protein.toFixed(1)}g`, color: "bg-brand-purple text-white" },
-                { label: "Carbs", value: `${carbs.toFixed(1)}g`, color: "bg-brand-gold text-white" },
-                { label: "Fat", value: `${fat.toFixed(1)}g`, color: "bg-brand-mauve text-white" },
+                {
+                  label: "Protein",
+                  value: `${protein.toFixed(1)}g`,
+                  color: "bg-brand-purple text-white",
+                },
+                {
+                  label: "Carbs",
+                  value: `${carbs.toFixed(1)}g`,
+                  color: "bg-brand-gold text-white",
+                },
+                {
+                  label: "Fat",
+                  value: `${fat.toFixed(1)}g`,
+                  color: "bg-brand-mauve text-white",
+                },
               ],
             };
           })
@@ -753,7 +819,7 @@ export default function DietPlanPage() {
     const sectionTemplate: Array<{ title: string; ratio: number }> = [
       { title: "Breakfast", ratio: 0.26 },
       { title: "Lunch", ratio: 0.34 },
-      { title: "Dinner", ratio: 0.30 },
+      { title: "Dinner", ratio: 0.3 },
     ];
 
     const planned = sectionTemplate.map((section) => {
@@ -769,9 +835,21 @@ export default function DietPlanPage() {
             name: `AI ${section.title} Plan`,
             kcal,
             macros: [
-              { label: "Protein", value: `${protein}g`, color: "bg-brand-purple text-white" },
-              { label: "Carbs", value: `${carbs}g`, color: "bg-brand-gold text-white" },
-              { label: "Fat", value: `${fat}g`, color: "bg-brand-mauve text-white" },
+              {
+                label: "Protein",
+                value: `${protein}g`,
+                color: "bg-brand-purple text-white",
+              },
+              {
+                label: "Carbs",
+                value: `${carbs}g`,
+                color: "bg-brand-gold text-white",
+              },
+              {
+                label: "Fat",
+                value: `${fat}g`,
+                color: "bg-brand-mauve text-white",
+              },
             ],
           },
         ],
@@ -787,10 +865,14 @@ export default function DietPlanPage() {
   }
 
   async function removeLogEntry(id: string) {
-    const existing = (logsByDate[selectedDate] || []).find((entry) => entry.id === id);
+    const existing = (logsByDate[selectedDate] || []).find(
+      (entry) => entry.id === id,
+    );
     setLogsByDate((prev) => ({
       ...prev,
-      [selectedDate]: (prev[selectedDate] || []).filter((entry) => entry.id !== id),
+      [selectedDate]: (prev[selectedDate] || []).filter(
+        (entry) => entry.id !== id,
+      ),
     }));
 
     if (!existing?.remoteId) return;
@@ -810,27 +892,30 @@ export default function DietPlanPage() {
   async function generateCoachInsight() {
     setCoachLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/nutrition/ai/coach-insight`, {
-        method: "POST",
-        headers: buildAuthHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({
-          date: selectedDate,
-          current_calories: consumed,
-          target_calories: total,
-          macros: {
-            protein_g: Number(totals.macros.protein.toFixed(1)),
-            carbs_g: Number(totals.macros.carbs.toFixed(1)),
-            fat_g: Number(totals.macros.fat.toFixed(1)),
-          },
-          macro_targets: {
-            protein_g: macroTargets.protein,
-            carbs_g: macroTargets.carbs,
-            fat_g: macroTargets.fat,
-          },
-          hydration_ml: hydratedMl,
-          hydration_goal_ml: hydrationGoalMl,
-        }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/nutrition/ai/coach-insight`,
+        {
+          method: "POST",
+          headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({
+            date: selectedDate,
+            current_calories: consumed,
+            target_calories: total,
+            macros: {
+              protein_g: Number(totals.macros.protein.toFixed(1)),
+              carbs_g: Number(totals.macros.carbs.toFixed(1)),
+              fat_g: Number(totals.macros.fat.toFixed(1)),
+            },
+            macro_targets: {
+              protein_g: macroTargets.protein,
+              carbs_g: macroTargets.carbs,
+              fat_g: macroTargets.fat,
+            },
+            hydration_ml: hydratedMl,
+            hydration_goal_ml: hydrationGoalMl,
+          }),
+        },
+      );
 
       if (!response.ok) throw new Error("insight-failed");
 
@@ -841,7 +926,10 @@ export default function DietPlanPage() {
         actions: data.actions,
       });
     } catch {
-      const proteinGap = Math.max(macroTargets.protein - totals.macros.protein, 0);
+      const proteinGap = Math.max(
+        macroTargets.protein - totals.macros.protein,
+        0,
+      );
       const waterGap = Math.max(hydrationGoalMl - hydratedMl, 0);
       const kcalDiffPct = Math.abs(total - consumed) / Math.max(total, 1);
 
@@ -863,21 +951,33 @@ export default function DietPlanPage() {
           `Add a high-protein meal today: +${Math.round(proteinGap)}g protein still remaining.`,
         );
       } else {
-        actions.push("Protein intake is on track. Keep meal timing consistent around training.");
+        actions.push(
+          "Protein intake is on track. Keep meal timing consistent around training.",
+        );
       }
 
       if (remaining > 250) {
-        actions.push(`You can still eat ~${remaining} kcal. Prioritize whole-food carbs + lean protein.`);
+        actions.push(
+          `You can still eat ~${remaining} kcal. Prioritize whole-food carbs + lean protein.`,
+        );
       } else if (remaining < -150) {
-        actions.push(`You are over by ${Math.abs(remaining)} kcal. Keep dinner light and avoid calorie-dense snacks.`);
+        actions.push(
+          `You are over by ${Math.abs(remaining)} kcal. Keep dinner light and avoid calorie-dense snacks.`,
+        );
       } else {
-        actions.push("Calories are close to target. Stay consistent and avoid random late-night extras.");
+        actions.push(
+          "Calories are close to target. Stay consistent and avoid random late-night extras.",
+        );
       }
 
       if (waterGap > 0) {
-        actions.push(`Hydration is low by ${waterGap} ml. Spread it across ${Math.ceil(waterGap / cupSizeMl)} more cups.`);
+        actions.push(
+          `Hydration is low by ${waterGap} ml. Spread it across ${Math.ceil(waterGap / cupSizeMl)} more cups.`,
+        );
       } else {
-        actions.push("Hydration target is complete. Great recovery support for training.");
+        actions.push(
+          "Hydration target is complete. Great recovery support for training.",
+        );
       }
 
       const verdict =
@@ -906,9 +1006,12 @@ export default function DietPlanPage() {
     <div className="relative space-y-6 pb-24">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-brand-slate">Nutrition and Diet Tracker</h1>
+          <h1 className="text-2xl font-bold text-brand-slate">
+            Nutrition and Diet Tracker
+          </h1>
           <p className="mt-1 text-sm text-brand-slate/55">
-            Log what you actually eat. Compare against your plan and get smart daily coaching.
+            Log what you actually eat. Compare against your plan and get smart
+            daily coaching.
           </p>
         </div>
 
@@ -948,10 +1051,16 @@ export default function DietPlanPage() {
               },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-2.5">
-                <span className={`h-3.5 w-3.5 flex-shrink-0 rounded-sm ${item.dotClass}`} />
+                <span
+                  className={`h-3.5 w-3.5 flex-shrink-0 rounded-sm ${item.dotClass}`}
+                />
                 <div>
-                  <p className="text-xs font-semibold text-brand-slate">{item.label}</p>
-                  <p className="text-[10px] text-brand-slate/50">{item.extra}</p>
+                  <p className="text-xs font-semibold text-brand-slate">
+                    {item.label}
+                  </p>
+                  <p className="text-[10px] text-brand-slate/50">
+                    {item.extra}
+                  </p>
                 </div>
               </div>
             ))}
@@ -972,7 +1081,9 @@ export default function DietPlanPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Card className="p-5 shadow-lg">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-bold text-brand-slate">Actual Intake Timeline</h3>
+            <h3 className="font-bold text-brand-slate">
+              Actual Intake Timeline
+            </h3>
             <span className="rounded-full bg-brand-bg px-2.5 py-1 text-[10px] font-semibold text-brand-purple">
               {isSyncingDate ? "Syncing..." : `${selectedLogs.length} entries`}
             </span>
@@ -981,12 +1092,20 @@ export default function DietPlanPage() {
           <div className="max-h-[320px] space-y-2.5 overflow-y-auto pr-1">
             {selectedLogs.length === 0 ? (
               <div className="rounded-xl border border-dashed border-brand-pale bg-brand-bg p-5 text-center">
-                <p className="text-sm font-semibold text-brand-slate/65">No meals logged for this date.</p>
-                <p className="mt-1 text-xs text-brand-slate/45">Tap Add Meal and log by section + time.</p>
+                <p className="text-sm font-semibold text-brand-slate/65">
+                  No meals logged for this date.
+                </p>
+                <p className="mt-1 text-xs text-brand-slate/45">
+                  Tap Add Meal and log by section + time.
+                </p>
               </div>
             ) : (
               selectedLogs.map((meal) => (
-                <LoggedMealRow key={meal.id} meal={meal} onDelete={removeLogEntry} />
+                <LoggedMealRow
+                  key={meal.id}
+                  meal={meal}
+                  onDelete={removeLogEntry}
+                />
               ))
             )}
           </div>
@@ -1079,36 +1198,48 @@ export default function DietPlanPage() {
 
           <div className="mb-3 grid grid-cols-3 gap-2">
             <label className="space-y-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-slate/45">Weight</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-slate/45">
+                Weight
+              </span>
               <input
                 type="number"
                 min={30}
                 max={220}
                 value={weightKg}
-                onChange={(e) => setWeightKg(Math.max(30, Number(e.target.value) || 30))}
+                onChange={(e) =>
+                  setWeightKg(Math.max(30, Number(e.target.value) || 30))
+                }
                 className="w-full rounded-lg border border-brand-pale bg-brand-bg px-2.5 py-1.5 text-sm text-brand-slate focus:border-brand-purple focus:outline-none"
               />
             </label>
             <label className="space-y-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-slate/45">Workout Min</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-slate/45">
+                Workout Min
+              </span>
               <input
                 type="number"
                 min={0}
                 max={300}
                 value={workoutMinutes}
-                onChange={(e) => setWorkoutMinutes(Math.max(0, Number(e.target.value) || 0))}
+                onChange={(e) =>
+                  setWorkoutMinutes(Math.max(0, Number(e.target.value) || 0))
+                }
                 className="w-full rounded-lg border border-brand-pale bg-brand-bg px-2.5 py-1.5 text-sm text-brand-slate focus:border-brand-purple focus:outline-none"
               />
             </label>
             <label className="space-y-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-slate/45">Cup ml</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-slate/45">
+                Cup ml
+              </span>
               <input
                 type="number"
                 min={100}
                 max={1000}
                 step={50}
                 value={cupSizeMl}
-                onChange={(e) => setCupSizeMl(Math.max(100, Number(e.target.value) || 100))}
+                onChange={(e) =>
+                  setCupSizeMl(Math.max(100, Number(e.target.value) || 100))
+                }
                 className="w-full rounded-lg border border-brand-pale bg-brand-bg px-2.5 py-1.5 text-sm text-brand-slate focus:border-brand-purple focus:outline-none"
               />
             </label>
@@ -1137,7 +1268,9 @@ export default function DietPlanPage() {
 
         <Card className="p-5 shadow-lg">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-bold text-brand-slate">Plan Compliance Snapshot</h3>
+            <h3 className="font-bold text-brand-slate">
+              Plan Compliance Snapshot
+            </h3>
             <button className="text-brand-slate/40 hover:text-brand-slate transition-colors">
               <MoreHorizontal size={18} />
             </button>
@@ -1176,7 +1309,9 @@ export default function DietPlanPage() {
               return (
                 <div key={name} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-brand-slate">{name}</span>
+                    <span className="font-semibold text-brand-slate">
+                      {name}
+                    </span>
                     <span className="text-brand-slate/55">
                       {sectionActual} / {sectionPlan || "-"} kcal
                     </span>

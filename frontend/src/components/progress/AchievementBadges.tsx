@@ -15,12 +15,8 @@ import {
   Award,
   Medal,
 } from "lucide-react";
-import { API_BASE_URL, buildAuthHeaders } from "@/Utils/api";
-import trophy from "@/assets/trophy.svg";
+import { API_BASE_URL, buildAuthHeaders, readErrorMessage } from "@/Utils/api";
 
-/* ─────────────────────────────────────────────
-   TYPES
-───────────────────────────────────────────── */
 type BadgeCategory =
   | "All"
   | "Fitness"
@@ -35,8 +31,8 @@ type Badge = {
   description: string;
   category: Exclude<BadgeCategory, "All">;
   unlocked: boolean;
-  unlocked_at?: string; // ISO date
-  progress?: number; // 0-100 for locked badges showing partial progress
+  unlocked_at?: string;
+  progress?: number;
   icon_key: BadgeIconKey;
   rarity: "common" | "rare" | "epic" | "legendary";
 };
@@ -54,9 +50,6 @@ type BadgeIconKey =
   | "award"
   | "medal";
 
-/* ─────────────────────────────────────────────
-   ICON MAP
-───────────────────────────────────────────── */
 const ICON_MAP: Record<BadgeIconKey, React.ReactNode> = {
   trophy: <Trophy size={20} />,
   star: <Star size={20} />,
@@ -71,9 +64,6 @@ const ICON_MAP: Record<BadgeIconKey, React.ReactNode> = {
   medal: <Medal size={20} />,
 };
 
-/* ─────────────────────────────────────────────
-   RARITY STYLES
-───────────────────────────────────────────── */
 const RARITY_STYLES: Record<
   Badge["rarity"],
   { ring: string; bg: string; icon: string; label: string; labelColor: string }
@@ -108,134 +98,6 @@ const RARITY_STYLES: Record<
   },
 };
 
-/* ─────────────────────────────────────────────
-   FALLBACK BADGES
-───────────────────────────────────────────── */
-const FALLBACK_BADGES: Badge[] = [
-  // Unlocked
-  {
-    id: "first-workout",
-    title: "First Step",
-    description: "Completed your very first workout.",
-    category: "Fitness",
-    unlocked: true,
-    unlocked_at: "2024-01-05T00:00:00Z",
-    icon_key: "zap",
-    rarity: "common",
-  },
-  {
-    id: "week-streak",
-    title: "7-Day Warrior",
-    description: "Maintained a 7-day workout streak.",
-    category: "Streak",
-    unlocked: true,
-    unlocked_at: "2024-02-14T00:00:00Z",
-    icon_key: "flame",
-    rarity: "rare",
-  },
-  {
-    id: "5k-run",
-    title: "5K Runner",
-    description: "Completed a 5km run.",
-    category: "Fitness",
-    unlocked: true,
-    unlocked_at: "2024-03-20T00:00:00Z",
-    icon_key: "medal",
-    rarity: "rare",
-  },
-  {
-    id: "hydration-hero",
-    title: "Hydration Hero",
-    description: "Hit daily water goal for 7 consecutive days.",
-    category: "Nutrition",
-    unlocked: true,
-    unlocked_at: "2024-04-10T00:00:00Z",
-    icon_key: "droplets",
-    rarity: "common",
-  },
-  {
-    id: "sleep-master",
-    title: "Sleep Master",
-    description: "Averaged 8+ hours of sleep for a week.",
-    category: "Sleep",
-    unlocked: true,
-    unlocked_at: "2024-05-01T00:00:00Z",
-    icon_key: "moon",
-    rarity: "rare",
-  },
-  {
-    id: "50-workouts",
-    title: "Half Century",
-    description: "Completed 50 total workouts.",
-    category: "Milestones",
-    unlocked: true,
-    unlocked_at: "2024-06-18T00:00:00Z",
-    icon_key: "trophy",
-    rarity: "epic",
-  },
-  // Locked with partial progress
-  {
-    id: "marathon",
-    title: "Marathon Legend",
-    description: "Run a total of 42km across all sessions.",
-    category: "Fitness",
-    unlocked: false,
-    progress: 65,
-    icon_key: "target",
-    rarity: "legendary",
-  },
-  {
-    id: "month-streak",
-    title: "30-Day Inferno",
-    description: "Maintain a 30-day workout streak.",
-    category: "Streak",
-    unlocked: false,
-    progress: 40,
-    icon_key: "flame",
-    rarity: "legendary",
-  },
-  {
-    id: "muscle-100",
-    title: "Muscle Machine",
-    description: "Log 100 strength training sessions.",
-    category: "Fitness",
-    unlocked: false,
-    progress: 72,
-    icon_key: "dumbbell",
-    rarity: "epic",
-  },
-  {
-    id: "protein-king",
-    title: "Protein King",
-    description: "Hit protein goal for 30 consecutive days.",
-    category: "Nutrition",
-    unlocked: false,
-    progress: 30,
-    icon_key: "heart",
-    rarity: "epic",
-  },
-  {
-    id: "100-workouts",
-    title: "Centurion",
-    description: "Complete 100 total workouts.",
-    category: "Milestones",
-    unlocked: false,
-    progress: 87,
-    icon_key: "award",
-    rarity: "legendary",
-  },
-  {
-    id: "star-performer",
-    title: "Star Performer",
-    description: "Achieve all goals in a single month.",
-    category: "Milestones",
-    unlocked: false,
-    progress: 55,
-    icon_key: "star",
-    rarity: "epic",
-  },
-];
-
 const CATEGORIES: BadgeCategory[] = [
   "All",
   "Fitness",
@@ -245,9 +107,69 @@ const CATEGORIES: BadgeCategory[] = [
   "Milestones",
 ];
 
-/* ─────────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────────── */
+const ICON_KEYS = new Set<string>([
+  "trophy",
+  "star",
+  "zap",
+  "flame",
+  "target",
+  "dumbbell",
+  "heart",
+  "moon",
+  "droplets",
+  "award",
+  "medal",
+]);
+
+const RARITIES = new Set<string>(["common", "rare", "epic", "legendary"]);
+
+const CATEGORIES_EXCEPT_ALL = new Set<string>([
+  "Fitness",
+  "Nutrition",
+  "Sleep",
+  "Streak",
+  "Milestones",
+]);
+
+function parseBadges(json: unknown): Badge[] {
+  if (!Array.isArray(json)) return [];
+  const out: Badge[] = [];
+  for (const row of json) {
+    if (!row || typeof row !== "object") continue;
+    const r = row as Record<string, unknown>;
+    const id = typeof r.id === "string" ? r.id : String(r.id ?? "");
+    const title = typeof r.title === "string" ? r.title : "";
+    const description = typeof r.description === "string" ? r.description : "";
+    const cat = typeof r.category === "string" ? r.category : "Milestones";
+    const category = CATEGORIES_EXCEPT_ALL.has(cat)
+      ? (cat as Badge["category"])
+      : "Milestones";
+    const icon_key = ICON_KEYS.has(String(r.icon_key))
+      ? (r.icon_key as BadgeIconKey)
+      : "trophy";
+    const rarity = RARITIES.has(String(r.rarity))
+      ? (r.rarity as Badge["rarity"])
+      : "common";
+    const unlocked = Boolean(r.unlocked);
+    const unlocked_at =
+      typeof r.unlocked_at === "string" ? r.unlocked_at : undefined;
+    const progress = typeof r.progress === "number" ? r.progress : undefined;
+    if (!id || !title) continue;
+    out.push({
+      id,
+      title,
+      description,
+      category,
+      unlocked,
+      unlocked_at,
+      progress,
+      icon_key,
+      rarity,
+    });
+  }
+  return out;
+}
+
 function formatUnlockDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", {
     day: "numeric",
@@ -256,9 +178,6 @@ function formatUnlockDate(iso: string): string {
   });
 }
 
-/* ─────────────────────────────────────────────
-   BADGE CARD
-───────────────────────────────────────────── */
 function BadgeCard({ badge }: { badge: Badge }) {
   const styles = RARITY_STYLES[badge.rarity];
   const isUnlocked = badge.unlocked;
@@ -271,7 +190,6 @@ function BadgeCard({ badge }: { badge: Badge }) {
           : "ring-brand-pale bg-white opacity-70"
       }`}
     >
-      {/* rarity label */}
       <div className="flex items-center justify-between">
         <span
           className={`text-[10px] font-bold uppercase tracking-widest ${
@@ -287,7 +205,6 @@ function BadgeCard({ badge }: { badge: Badge }) {
         )}
       </div>
 
-      {/* icon circle */}
       <div className="flex items-center gap-3">
         <div
           className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl shadow-sm ${
@@ -315,7 +232,6 @@ function BadgeCard({ badge }: { badge: Badge }) {
         </div>
       </div>
 
-      {/* unlocked date OR progress bar */}
       {isUnlocked && badge.unlocked_at ? (
         <p className="text-[10px] text-brand-slate/45">
           🏅 {formatUnlockDate(badge.unlocked_at)}
@@ -338,9 +254,6 @@ function BadgeCard({ badge }: { badge: Badge }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   SKELETON
-───────────────────────────────────────────── */
 function BadgeSkeleton() {
   return (
     <div className="animate-pulse rounded-2xl bg-white p-4 ring-2 ring-brand-pale">
@@ -356,28 +269,29 @@ function BadgeSkeleton() {
   );
 }
 
-/* ─────────────────────────────────────────────
-   COMPONENT
-───────────────────────────────────────────── */
 export default function AchievementBadges() {
   const [badges, setBadges] = useState<Badge[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isFallback, setIsFallback] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<BadgeCategory>("All");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch(`${API_BASE_URL}/api/progress/achievements`, {
         headers: buildAuthHeaders(),
       });
-      if (!res.ok) throw new Error("API error");
-      const data: Badge[] = await res.json();
-      setBadges(data.length ? data : FALLBACK_BADGES);
-      setIsFallback(!data.length);
+      if (!res.ok) {
+        setError(await readErrorMessage(res, "Could not load achievements"));
+        setBadges([]);
+        return;
+      }
+      const data = await res.json();
+      setBadges(parseBadges(data));
     } catch {
-      setBadges(FALLBACK_BADGES);
-      setIsFallback(true);
+      setError("Network error while loading achievements");
+      setBadges([]);
     } finally {
       setLoading(false);
     }
@@ -387,7 +301,6 @@ export default function AchievementBadges() {
     fetchData();
   }, [fetchData]);
 
-  /* ── filtered + sorted: unlocked first, then by rarity ── */
   const RARITY_ORDER = { legendary: 0, epic: 1, rare: 2, common: 3 };
 
   const filtered = badges
@@ -402,37 +315,55 @@ export default function AchievementBadges() {
 
   return (
     <div className="rounded-2xl bg-white p-5 shadow-[0_4px_20px_-4px_#9567B920]">
-      {/* ── Header ── */}
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-bold text-brand-slate">Achievements</h2>
           <p className="mt-0.5 text-xs text-brand-slate/50">
-            Auto-unlocked from goals, workouts &amp; streaks
+            Unlocked achievements from your account
           </p>
         </div>
 
-        {/* summary pill */}
-        {!loading && (
+        {!loading && !error && (
           <div className="flex items-center gap-2 rounded-xl bg-brand-bg px-3 py-1.5">
             <Trophy size={13} className="text-brand-gold" />
             <span className="text-xs font-bold text-brand-slate">
-              {unlockedCount}
-              <span className="font-normal text-brand-slate/50">
-                {" "}
-                / {totalCount} unlocked
-              </span>
+              {totalCount === 0 ? (
+                "No achievements yet"
+              ) : (
+                <>
+                  {unlockedCount}
+                  <span className="font-normal text-brand-slate/50">
+                    {" "}
+                    / {totalCount} unlocked
+                  </span>
+                </>
+              )}
             </span>
           </div>
         )}
       </div>
 
-      {/* ── Overall progress bar ── */}
-      {!loading && totalCount > 0 && (
+      {loading ? null : error ? (
+        <div className="mb-4 flex flex-col items-center gap-2 py-6 text-center">
+          <p className="text-sm font-medium text-brand-slate">{error}</p>
+          <button
+            type="button"
+            onClick={() => fetchData()}
+            className="text-xs font-semibold text-brand-purple hover:underline"
+          >
+            Try again
+          </button>
+        </div>
+      ) : null}
+
+      {!loading && !error && totalCount > 0 && (
         <div className="mb-4">
           <div className="h-2 w-full overflow-hidden rounded-full bg-brand-pale">
             <div
               className="h-full rounded-full bg-gradient-to-r from-brand-soft to-brand-deep transition-all duration-700"
-              style={{ width: `${(unlockedCount / totalCount) * 100}%` }}
+              style={{
+                width: `${(unlockedCount / totalCount) * 100}%`,
+              }}
             />
           </div>
           <p className="mt-1.5 text-right text-[10px] text-brand-slate/40">
@@ -441,28 +372,39 @@ export default function AchievementBadges() {
         </div>
       )}
 
-      {/* ── Category filter pills ── */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            onClick={() => setActiveCategory(cat)}
-            className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-              activeCategory === cat
-                ? "border-brand-purple bg-brand-purple text-white"
-                : "border-brand-pale bg-brand-bg text-brand-slate hover:border-brand-mauve"
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
+      {!loading && !error && totalCount > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setActiveCategory(cat)}
+              className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                activeCategory === cat
+                  ? "border-brand-purple bg-brand-purple text-white"
+                  : "border-brand-pale bg-brand-bg text-brand-slate hover:border-brand-mauve"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* ── Badge grid ── */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {loading ? (
           [...Array(6)].map((_, i) => <BadgeSkeleton key={i} />)
+        ) : error ? null : totalCount === 0 ? (
+          <div className="col-span-full flex flex-col items-center gap-2 py-10 text-center">
+            <span className="text-3xl">🏅</span>
+            <p className="font-semibold text-brand-slate">
+              No achievements unlocked yet
+            </p>
+            <p className="max-w-sm text-xs text-brand-slate/45">
+              When your account earns badges (for example from workouts, goals,
+              or streaks), they will show up here automatically.
+            </p>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="col-span-full flex flex-col items-center gap-2 py-10 text-center">
             <span className="text-3xl">🏅</span>
@@ -470,8 +412,7 @@ export default function AchievementBadges() {
               No {activeCategory} badges yet
             </p>
             <p className="text-xs text-brand-slate/45">
-              Complete {activeCategory.toLowerCase()} goals to unlock badges
-              here.
+              Try another category or keep training to unlock more.
             </p>
           </div>
         ) : (
@@ -479,8 +420,7 @@ export default function AchievementBadges() {
         )}
       </div>
 
-      {/* ── Rarity legend ── */}
-      {!loading && (
+      {!loading && !error && totalCount > 0 && (
         <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-brand-pale pt-4">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-slate/40">
             Rarity
@@ -499,13 +439,6 @@ export default function AchievementBadges() {
             </span>
           ))}
         </div>
-      )}
-
-      {/* ── Fallback note ── */}
-      {isFallback && !loading && (
-        <p className="mt-3 text-center text-[11px] text-brand-slate/35">
-          Showing sample badges · complete goals to unlock real achievements
-        </p>
       )}
     </div>
   );

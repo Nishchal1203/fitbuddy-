@@ -5,8 +5,8 @@ from kombu import Queue
 import app.db.base  # noqa: F401  # ensure all models are imported before task execution
 
 # Celery configuration
-CELERY_BROKER_URL = os.getenv("RABBITMQ_URL", "amqp://fitbuddy:fitbuddy123@rabbitmq:5672/")
-CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://redis:6379/0")
+CELERY_BROKER_URL = os.getenv("RABBITMQ_URL") or os.getenv("CELERY_BROKER_URL", "amqp://fitbuddy:fitbuddy123@rabbitmq:5672/")
+CELERY_RESULT_BACKEND = os.getenv("REDIS_URL") or os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
 
 # Create Celery app
 celery_app = Celery(

@@ -333,15 +333,18 @@ export default function AIGoalAssistant({
           ? await fileToBase64(selectedImageFile)
           : null;
 
-        const response = await fetch(`${API_BASE_URL}/api/nutrition/ai/generate-plan`, {
-          method: "POST",
-          headers: buildAuthHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify({
-            prompt,
-            image_base64: imageBase64,
-            user_context: userContext || {},
-          }),
-        });
+        const response = await fetch(
+          `${API_BASE_URL}/api/nutrition/ai/generate-plan`,
+          {
+            method: "POST",
+            headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({
+              prompt,
+              image_base64: imageBase64,
+              user_context: userContext || {},
+            }),
+          },
+        );
 
         if (response.ok) {
           const data = (await response.json()) as NutritionAIGenerateResponse;
@@ -355,7 +358,9 @@ export default function AIGoalAssistant({
           });
         } else {
           setResponse(MOCK_RESPONSES[mode]);
-          setError("AI service is unavailable right now, showing fallback recommendation.");
+          setError(
+            "AI service is unavailable right now, showing fallback recommendation.",
+          );
         }
       } else {
         const response = await fetch(`${API_BASE_URL}/api/goals/ai-draft`, {
@@ -371,13 +376,17 @@ export default function AIGoalAssistant({
           const data = (await response.json()) as GoalAIGenerateResponse;
           setResponse({
             summary: data.summary,
-            suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
+            suggestions: Array.isArray(data.suggestions)
+              ? data.suggestions
+              : [],
             action_label: "Apply Goal Plan",
             action_data: data.recommended_goal || {},
           });
         } else {
           setResponse(MOCK_RESPONSES[mode]);
-          setError("AI service is unavailable right now, showing fallback recommendation.");
+          setError(
+            "AI service is unavailable right now, showing fallback recommendation.",
+          );
         }
       }
     } catch {
