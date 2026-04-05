@@ -29,7 +29,10 @@ function toUiMessage(message: ChatApiMessage): Message {
   };
 }
 
-function toUiConversation(item: ChatApiConversation, messages: Message[] = []): Conversation {
+function toUiConversation(
+  item: ChatApiConversation,
+  messages: Message[] = [],
+): Conversation {
   return {
     id: String(item.id),
     title: item.title,
@@ -82,25 +85,23 @@ export default function ChatPage() {
       if (!existing) return [incoming, ...prev];
       const merged: Conversation = {
         ...incoming,
-        messages: incoming.messages.length > 0 ? incoming.messages : existing.messages,
+        messages:
+          incoming.messages.length > 0 ? incoming.messages : existing.messages,
       };
       return [merged, ...prev.filter((c) => c.id !== incoming.id)];
     });
   }, []);
 
-  const loadConversations = useCallback(
-    async (q: string) => {
-      const rows = await fetchConversations(q);
-      setConversations((prev) => {
-        const prevMap = new Map(prev.map((c) => [c.id, c]));
-        return rows.map((row) => {
-          const id = String(row.id);
-          return toUiConversation(row, prevMap.get(id)?.messages ?? []);
-        });
+  const loadConversations = useCallback(async (q: string) => {
+    const rows = await fetchConversations(q);
+    setConversations((prev) => {
+      const prevMap = new Map(prev.map((c) => [c.id, c]));
+      return rows.map((row) => {
+        const id = String(row.id);
+        return toUiConversation(row, prevMap.get(id)?.messages ?? []);
       });
-    },
-    [],
-  );
+    });
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -109,7 +110,9 @@ export default function ChatPage() {
         await loadConversations(searchTerm);
       } catch (error) {
         if (isActive) {
-          setErrorMessage((error as Error).message || "Failed to load chat history");
+          setErrorMessage(
+            (error as Error).message || "Failed to load chat history",
+          );
         }
       }
     }, 250);
@@ -153,7 +156,9 @@ export default function ChatPage() {
           toUiConversation(detail, detail.messages.map(toUiMessage)),
         );
       } catch (error) {
-        setErrorMessage((error as Error).message || "Failed to open conversation");
+        setErrorMessage(
+          (error as Error).message || "Failed to open conversation",
+        );
       }
     },
     [upsertConversation],
@@ -175,7 +180,9 @@ export default function ChatPage() {
           variant: "success",
         });
       } catch (error) {
-        setErrorMessage((error as Error).message || "Failed to delete conversation");
+        setErrorMessage(
+          (error as Error).message || "Failed to delete conversation",
+        );
       }
     },
     [conversations, showToast],
@@ -194,14 +201,14 @@ export default function ChatPage() {
 
       try {
         const updated = await updateConversation(id, { pinned: nextPinned });
-        upsertConversation(
-          toUiConversation(updated, conversation.messages),
-        );
+        upsertConversation(toUiConversation(updated, conversation.messages));
       } catch (error) {
         setConversations((prev) =>
           prev.map((c) => (c.id === id ? { ...c, pinned: !nextPinned } : c)),
         );
-        setErrorMessage((error as Error).message || "Failed to update conversation");
+        setErrorMessage(
+          (error as Error).message || "Failed to update conversation",
+        );
       }
     },
     [conversations, upsertConversation],
@@ -210,7 +217,8 @@ export default function ChatPage() {
   /* ── like / dislike ── */
   const handleLike = useCallback(
     async (msgId: string) => {
-      const next = messages.find((m) => m.id === msgId)?.liked === true ? null : true;
+      const next =
+        messages.find((m) => m.id === msgId)?.liked === true ? null : true;
       setConversations((prev) =>
         prev.map((c) =>
           c.id !== activeConversationId
@@ -235,7 +243,8 @@ export default function ChatPage() {
 
   const handleDislike = useCallback(
     async (msgId: string) => {
-      const next = messages.find((m) => m.id === msgId)?.liked === false ? null : false;
+      const next =
+        messages.find((m) => m.id === msgId)?.liked === false ? null : false;
       setConversations((prev) =>
         prev.map((c) =>
           c.id !== activeConversationId
@@ -320,7 +329,10 @@ export default function ChatPage() {
         const startedAt = Date.now();
         while (Date.now() - startedAt < 60_000) {
           await sleep(1500);
-          const status = await pollMessageStatus(conversationId, response.request.request_id);
+          const status = await pollMessageStatus(
+            conversationId,
+            response.request.request_id,
+          );
           if (status.status === "completed" && status.assistant_message) {
             const assistant = toUiMessage(status.assistant_message);
             setConversations((prev) =>
@@ -339,7 +351,9 @@ export default function ChatPage() {
           }
 
           if (status.status === "failed") {
-            throw new Error(status.error_text || "AI response generation failed");
+            throw new Error(
+              status.error_text || "AI response generation failed",
+            );
           }
         }
 

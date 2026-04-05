@@ -15,7 +15,8 @@ type StreakData = {
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 function normalizeWeeklyActivity(raw: unknown): boolean[] {
-  if (!Array.isArray(raw)) return [false, false, false, false, false, false, false];
+  if (!Array.isArray(raw))
+    return [false, false, false, false, false, false, false];
   const booleans = raw.map((v) => Boolean(v));
   const last7 = booleans.slice(-7);
   while (last7.length < 7) last7.unshift(false);
@@ -25,7 +26,10 @@ function normalizeWeeklyActivity(raw: unknown): boolean[] {
 function parseStreakPayload(json: unknown): StreakData | null {
   if (!json || typeof json !== "object") return null;
   const o = json as Record<string, unknown>;
-  if (typeof o.current_streak !== "number" || typeof o.longest_streak !== "number")
+  if (
+    typeof o.current_streak !== "number" ||
+    typeof o.longest_streak !== "number"
+  )
     return null;
   return {
     current_streak: o.current_streak,

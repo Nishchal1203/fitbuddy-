@@ -107,12 +107,8 @@ export default function WeightTrendChart() {
   const currentWeight = data.length ? data[data.length - 1].weight : null;
 
   const weights = data.map((d) => d.weight);
-  const minWeight = weights.length
-    ? Math.floor(Math.min(...weights)) - 2
-    : 0;
-  const maxWeight = weights.length
-    ? Math.ceil(Math.max(...weights)) + 2
-    : 100;
+  const minWeight = weights.length ? Math.floor(Math.min(...weights)) - 2 : 0;
+  const maxWeight = weights.length ? Math.ceil(Math.max(...weights)) + 2 : 100;
 
   return (
     <div className="rounded-2xl bg-white p-5 shadow-[0_4px_20px_-4px_#9567B920]">
@@ -185,8 +181,8 @@ export default function WeightTrendChart() {
             No weight entries yet
           </p>
           <p className="max-w-sm text-xs text-brand-slate/50">
-            Log a body measurement that includes your weight. Points from the last
-            30 days appear on this chart.
+            Log a body measurement that includes your weight. Points from the
+            last 30 days appear on this chart.
           </p>
         </div>
       ) : (

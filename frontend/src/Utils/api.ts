@@ -1,5 +1,6 @@
-export const API_BASE_URL =
-  (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").trim();
+export const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+).trim();
 
 const ACCESS_TOKEN_KEY = "access_token";
 
@@ -33,7 +34,8 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 
 export function isTokenExpired(token: string, bufferSeconds = 120): boolean {
   const payload = decodeJwtPayload(token);
-  const exp = typeof payload?.exp === "number" ? payload.exp : Number(payload?.exp);
+  const exp =
+    typeof payload?.exp === "number" ? payload.exp : Number(payload?.exp);
 
   if (!Number.isFinite(exp)) {
     return true;

@@ -25,7 +25,8 @@ export default function ProgressPage() {
           Fitness Progress &amp; Achievements
         </h1>
         <p className="mt-1 text-sm text-brand-slate/55">
-          Track all your metrics in one place: workouts, diet, weight, goals, and measurements.
+          Track all your metrics in one place: workouts, diet, weight, goals,
+          and measurements.
         </p>
       </div>
 

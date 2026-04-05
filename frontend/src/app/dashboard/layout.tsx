@@ -30,11 +30,17 @@ export default function DashboardLayout({
 
     const restoreSession = async () => {
       const fragment =
-        typeof window !== "undefined" ? new URLSearchParams(window.location.hash.slice(1)) : null;
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.hash.slice(1))
+          : null;
       const redirectedAccessToken = fragment?.get("access_token");
       if (redirectedAccessToken) {
         setAuthToken(redirectedAccessToken);
-        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        window.history.replaceState(
+          null,
+          "",
+          window.location.pathname + window.location.search,
+        );
       }
 
       const token = getAuthToken();
@@ -73,19 +79,22 @@ export default function DashboardLayout({
     }
 
     let cancelled = false;
-    const refreshInterval = window.setInterval(() => {
-      void (async () => {
-        const refreshedToken = await refreshAccessToken();
-        if (cancelled) {
-          return;
-        }
+    const refreshInterval = window.setInterval(
+      () => {
+        void (async () => {
+          const refreshedToken = await refreshAccessToken();
+          if (cancelled) {
+            return;
+          }
 
-        if (!refreshedToken) {
-          await logoutUser();
-          router.replace("/login");
-        }
-      })();
-    }, 45 * 60 * 1000);
+          if (!refreshedToken) {
+            await logoutUser();
+            router.replace("/login");
+          }
+        })();
+      },
+      45 * 60 * 1000,
+    );
 
     return () => {
       cancelled = true;

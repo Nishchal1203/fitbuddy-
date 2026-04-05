@@ -46,7 +46,9 @@ export function Modal({
             </Button>
           </div>
         )}
-        <div className={hideHeader ? "" : "max-h-[78vh] overflow-y-auto p-4"}>{children}</div>
+        <div className={hideHeader ? "" : "max-h-[78vh] overflow-y-auto p-4"}>
+          {children}
+        </div>
       </div>
     </div>
   );

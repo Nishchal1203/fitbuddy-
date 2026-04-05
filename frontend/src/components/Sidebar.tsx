@@ -71,7 +71,9 @@ export default function Sidebar({
         />
       </button>
 
-      <nav className={`flex-1 overflow-y-auto ${isCollapsed ? "px-2 pt-2" : "px-3 pt-3"}`}>
+      <nav
+        className={`flex-1 overflow-y-auto ${isCollapsed ? "px-2 pt-2" : "px-3 pt-3"}`}
+      >
         <ul className="space-y-1">
           {navItems.map(({ href, label, icon: Icon, imageIcon }) => {
             const isActive = activePath === href;

@@ -44,7 +44,9 @@ export default function ProfileFormCard({
           <Sparkles size={18} className="text-brand-deep" />
           <CardTitle>Profile Details</CardTitle>
         </div>
-        <CardDescription>Keep your profile updated for better recommendations.</CardDescription>
+        <CardDescription>
+          Keep your profile updated for better recommendations.
+        </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -64,7 +66,12 @@ export default function ProfileFormCard({
         />
 
         <div className="pt-2">
-          <Button type="button" loading={saving} onClick={onSubmit} className="rounded-xl">
+          <Button
+            type="button"
+            loading={saving}
+            onClick={onSubmit}
+            className="rounded-xl"
+          >
             <Save size={16} />
             {saving ? "Saving..." : "Save Profile"}
           </Button>

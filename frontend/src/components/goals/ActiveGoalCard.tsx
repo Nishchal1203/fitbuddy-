@@ -86,7 +86,9 @@ export default function ActiveGoalCard({
         </span>
       </div>
 
-      <p className="text-xs text-brand-slate/45">Click card to view plan details and follow steps.</p>
+      <p className="text-xs text-brand-slate/45">
+        Click card to view plan details and follow steps.
+      </p>
 
       <Button
         type="button"

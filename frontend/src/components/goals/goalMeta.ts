@@ -14,7 +14,11 @@ export function normalizeGoalCategory(input?: string): GoalLabel {
   const lower = String(input || "").toLowerCase();
   if (lower.includes("nutri") || lower.includes("diet")) return "Nutrition";
   if (lower.includes("sleep") || lower.includes("rest")) return "Sleep";
-  if (lower.includes("weight") || lower.includes("fat") || lower.includes("bulk")) {
+  if (
+    lower.includes("weight") ||
+    lower.includes("fat") ||
+    lower.includes("bulk")
+  ) {
     return "Weight";
   }
   return "Fitness";
@@ -72,7 +76,10 @@ export function toDueLabel(targetDate?: string | null): string {
 
 export function toProgress(currentValue: number, targetValue: number): number {
   if (targetValue <= 0) return 0;
-  return Math.max(0, Math.min(100, Math.round((currentValue / targetValue) * 100)));
+  return Math.max(
+    0,
+    Math.min(100, Math.round((currentValue / targetValue) * 100)),
+  );
 }
 
 export function buildGoalDescription(
@@ -103,19 +110,26 @@ export function parseGoalDescription(description: string | null | undefined): {
 
   try {
     const parsed = JSON.parse(metaRaw) as Partial<GoalMetadata>;
-    const category = normalizeGoalCategory(String(parsed.category || "Fitness"));
+    const category = normalizeGoalCategory(
+      String(parsed.category || "Fitness"),
+    );
     const currentValue = Number(parsed.currentValue ?? 0);
     const targetValue = Math.max(1, Number(parsed.targetValue ?? 100));
     const unit = String(parsed.unit || defaultUnitByCategory(category));
     const steps = Array.isArray(parsed.steps)
-      ? parsed.steps.filter((step): step is string => typeof step === "string" && step.trim().length > 0)
+      ? parsed.steps.filter(
+          (step): step is string =>
+            typeof step === "string" && step.trim().length > 0,
+        )
       : [];
 
     return {
       cleanDescription,
       metadata: {
         category,
-        currentValue: Number.isFinite(currentValue) ? Math.max(0, currentValue) : 0,
+        currentValue: Number.isFinite(currentValue)
+          ? Math.max(0, currentValue)
+          : 0,
         targetValue: Number.isFinite(targetValue) ? targetValue : 100,
         unit,
         steps,

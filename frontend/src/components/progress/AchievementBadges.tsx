@@ -153,8 +153,7 @@ function parseBadges(json: unknown): Badge[] {
     const unlocked = Boolean(r.unlocked);
     const unlocked_at =
       typeof r.unlocked_at === "string" ? r.unlocked_at : undefined;
-    const progress =
-      typeof r.progress === "number" ? r.progress : undefined;
+    const progress = typeof r.progress === "number" ? r.progress : undefined;
     if (!id || !title) continue;
     out.push({
       id,

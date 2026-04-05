@@ -91,8 +91,18 @@ const QUOTES = [
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MONTHS = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 /* ─────────────────────────────────────────────
@@ -126,9 +136,7 @@ function DeltaBadge({ delta }: { delta: number | null }) {
   return (
     <span
       className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-        up
-          ? "bg-green-50 text-green-600"
-          : "bg-red-50 text-red-500"
+        up ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"
       }`}
     >
       {up ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
@@ -165,7 +173,9 @@ function StatCard({
 
       <div className="relative">
         <div className="mb-3 flex items-start justify-between">
-          <p className="text-xs font-semibold uppercase tracking-widest text-white/70">{label}</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-white/70">
+            {label}
+          </p>
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">
             <Icon size={16} />
           </div>
@@ -173,7 +183,11 @@ function StatCard({
 
         <p className="text-3xl font-bold leading-none">
           {typeof value === "number" ? value.toLocaleString() : value}
-          {unit && <span className="ml-1 text-base font-medium text-white/60">{unit}</span>}
+          {unit && (
+            <span className="ml-1 text-base font-medium text-white/60">
+              {unit}
+            </span>
+          )}
         </p>
 
         <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/20">
@@ -191,44 +205,58 @@ function StatCard({
    PAGE
 ───────────────────────────────────────────── */
 export default function DashboardHome() {
-  const [user,           setUser]           = useState<any>(null);
-  const [loading,        setLoading]        = useState(true);
-  const [quote,          setQuote]          = useState(QUOTES[0]);
-  const [progressData,   setProgressData]   = useState<ComprehensiveProgressResponse | null>(null);
-  const [streakData,     setStreakData]      = useState<StreakResponse | null>(null);
-  const [monthlySummary, setMonthlySummary] = useState<MonthlySummaryResponse | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [quote, setQuote] = useState(QUOTES[0]);
+  const [progressData, setProgressData] =
+    useState<ComprehensiveProgressResponse | null>(null);
+  const [streakData, setStreakData] = useState<StreakResponse | null>(null);
+  const [monthlySummary, setMonthlySummary] =
+    useState<MonthlySummaryResponse | null>(null);
 
   /* ── fetch ── */
   async function fetchAll() {
     setLoading(true);
     try {
       const [userRes, progressRes, streakRes, monthlyRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/users/me`,                                          { headers: buildAuthHeaders() }),
-        fetch(`${API_BASE_URL}/api/progress/comprehensive?timeframe=1_month`,          { headers: buildAuthHeaders() }),
-        fetch(`${API_BASE_URL}/api/progress/streak`,                                   { headers: buildAuthHeaders() }),
-        fetch(`${API_BASE_URL}/api/progress/monthly-summary`,                          { headers: buildAuthHeaders() }),
+        fetch(`${API_BASE_URL}/api/users/me`, { headers: buildAuthHeaders() }),
+        fetch(`${API_BASE_URL}/api/progress/comprehensive?timeframe=1_month`, {
+          headers: buildAuthHeaders(),
+        }),
+        fetch(`${API_BASE_URL}/api/progress/streak`, {
+          headers: buildAuthHeaders(),
+        }),
+        fetch(`${API_BASE_URL}/api/progress/monthly-summary`, {
+          headers: buildAuthHeaders(),
+        }),
       ]);
-      if (userRes.ok)     setUser(await userRes.json());
+      if (userRes.ok) setUser(await userRes.json());
       if (progressRes.ok) setProgressData(await progressRes.json());
-      if (streakRes.ok)   setStreakData(await streakRes.json());
-      if (monthlyRes.ok)  setMonthlySummary(await monthlyRes.json());
-    } catch { /* silently continue with nulls */ }
-    finally { setLoading(false); }
+      if (streakRes.ok) setStreakData(await streakRes.json());
+      if (monthlyRes.ok) setMonthlySummary(await monthlyRes.json());
+    } catch {
+      /* silently continue with nulls */
+    } finally {
+      setLoading(false);
+    }
   }
 
-  useEffect(() => { fetchAll(); }, []);
-  useEffect(() => { setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]); }, []);
+  useEffect(() => {
+    fetchAll();
+  }, []);
+  useEffect(() => {
+    setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+  }, []);
 
   const firstName = user?.full_name?.split(" ")[0] ?? "Champion";
-  const s         = progressData?.summary;
-  const now       = new Date();
+  const s = progressData?.summary;
+  const now = new Date();
 
   /* ─────────────────────────────────────────────
      RENDER
   ───────────────────────────────────────────── */
   return (
     <div className="space-y-6 p-6">
-
       {/* ══════════════════════════════════════════
           HERO — Welcome + Quote
       ══════════════════════════════════════════ */}
@@ -256,7 +284,9 @@ export default function DashboardHome() {
 
           {/* refresh quote */}
           <button
-            onClick={() => setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)])}
+            onClick={() =>
+              setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)])
+            }
             title="New quote"
             className="mt-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/15 text-white transition hover:bg-white/25"
           >
@@ -267,9 +297,13 @@ export default function DashboardHome() {
         {/* quick action pills */}
         <div className="relative mt-6 flex flex-wrap gap-2">
           {[
-            { label: "Log Workout", icon: Dumbbell, href: "/dashboard/workouts" },
-            { label: "Log Meal",    icon: Apple,    href: "/dashboard/plans" },
-            { label: "View Goals",  icon: Target,   href: "/dashboard/goals" },
+            {
+              label: "Log Workout",
+              icon: Dumbbell,
+              href: "/dashboard/workouts",
+            },
+            { label: "Log Meal", icon: Apple, href: "/dashboard/plans" },
+            { label: "View Goals", icon: Target, href: "/dashboard/goals" },
           ].map((a) => (
             <a
               key={a.label}
@@ -330,12 +364,11 @@ export default function DashboardHome() {
         <ComprehensiveProgressChart />
       </div>
 
-        {/* ══════════════════════════════════════════
+      {/* ══════════════════════════════════════════
           SECONDARY ROW — Streak | Monthly Performance
           side-by-side on large screens
         ══════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* ── Streak card ── */}
         {streakData && (
           <div className="flex flex-col gap-4 rounded-2xl border border-brand-pale bg-white p-5 shadow-[0_4px_20px_-4px_#9567B920]">
@@ -354,7 +387,9 @@ export default function DashboardHome() {
 
             {/* big number */}
             <div className="text-center">
-              <p className="text-5xl font-bold text-brand-slate">{streakData.current_streak}</p>
+              <p className="text-5xl font-bold text-brand-slate">
+                {streakData.current_streak}
+              </p>
               <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-brand-slate/45">
                 Day Streak
               </p>
@@ -363,11 +398,15 @@ export default function DashboardHome() {
             {/* sub stats */}
             <div className="grid grid-cols-2 divide-x divide-brand-pale rounded-xl border border-brand-pale">
               <div className="px-3 py-2.5 text-center">
-                <p className="text-lg font-bold text-brand-slate">{streakData.longest_streak}</p>
+                <p className="text-lg font-bold text-brand-slate">
+                  {streakData.longest_streak}
+                </p>
                 <p className="text-[10px] text-brand-slate/45">Best</p>
               </div>
               <div className="px-3 py-2.5 text-center">
-                <p className="text-lg font-bold text-brand-slate">{streakData.total_workout_days}</p>
+                <p className="text-lg font-bold text-brand-slate">
+                  {streakData.total_workout_days}
+                </p>
                 <p className="text-[10px] text-brand-slate/45">Total Days</p>
               </div>
             </div>
@@ -380,9 +419,14 @@ export default function DashboardHome() {
               <div className="flex items-end gap-1">
                 {(streakData.weekly_activity.length === 7
                   ? streakData.weekly_activity
-                  : [...Array(7)].map((_, i) => streakData.weekly_activity[i] ?? false)
+                  : [...Array(7)].map(
+                      (_, i) => streakData.weekly_activity[i] ?? false,
+                    )
                 ).map((active, i) => (
-                  <div key={i} className="flex flex-1 flex-col items-center gap-1">
+                  <div
+                    key={i}
+                    className="flex flex-1 flex-col items-center gap-1"
+                  >
                     <div
                       className={`w-full rounded-md transition-all ${
                         active
@@ -390,7 +434,9 @@ export default function DashboardHome() {
                           : "bg-brand-pale h-4"
                       }`}
                     />
-                    <p className="text-[8px] font-semibold text-brand-slate/40">{DAYS[i]}</p>
+                    <p className="text-[8px] font-semibold text-brand-slate/40">
+                      {DAYS[i]}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -408,7 +454,9 @@ export default function DashboardHome() {
                   <TrendingUp size={15} />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-brand-slate">Monthly Performance</p>
+                  <p className="text-sm font-bold text-brand-slate">
+                    Monthly Performance
+                  </p>
                   <p className="text-[10px] text-brand-slate/45">
                     {MONTHS[monthlySummary.month - 1]} {monthlySummary.year}
                   </p>
@@ -422,35 +470,37 @@ export default function DashboardHome() {
                 {
                   label: "Workouts",
                   value: monthlySummary.workouts_completed,
-                  prev:  monthlySummary.prev_workouts_completed,
-                  unit:  "",
-                  icon:  Activity,
+                  prev: monthlySummary.prev_workouts_completed,
+                  unit: "",
+                  icon: Activity,
                 },
                 {
                   label: "Active Min",
                   value: monthlySummary.active_minutes,
-                  prev:  monthlySummary.prev_active_minutes,
-                  unit:  "min",
-                  icon:  Zap,
+                  prev: monthlySummary.prev_active_minutes,
+                  unit: "min",
+                  icon: Zap,
                 },
                 {
                   label: "Calories",
                   value: Math.round(monthlySummary.calories_burned),
-                  prev:  Math.round(monthlySummary.prev_calories_burned),
-                  unit:  "kcal",
-                  icon:  Flame,
+                  prev: Math.round(monthlySummary.prev_calories_burned),
+                  unit: "kcal",
+                  icon: Flame,
                 },
                 {
                   label: "Distance",
                   value: monthlySummary.total_distance_km.toFixed(1),
-                  prev:  monthlySummary.prev_total_distance_km,
-                  unit:  "km",
-                  icon:  TrendingUp,
+                  prev: monthlySummary.prev_total_distance_km,
+                  unit: "km",
+                  icon: TrendingUp,
                 },
               ].map((stat) => {
-                const delta = typeof stat.value === "number" && typeof stat.prev === "number"
-                  ? deltaPercent(stat.value, stat.prev)
-                  : null;
+                const delta =
+                  typeof stat.value === "number" &&
+                  typeof stat.prev === "number"
+                    ? deltaPercent(stat.value, stat.prev)
+                    : null;
                 return (
                   <div
                     key={stat.label}
@@ -466,7 +516,9 @@ export default function DashboardHome() {
                       {typeof stat.value === "number"
                         ? stat.value.toLocaleString()
                         : stat.value}
-                      <span className="ml-1 text-xs font-normal text-brand-slate/40">{stat.unit}</span>
+                      <span className="ml-1 text-xs font-normal text-brand-slate/40">
+                        {stat.unit}
+                      </span>
                     </p>
                     <DeltaBadge delta={delta} />
                   </div>
@@ -481,7 +533,6 @@ export default function DashboardHome() {
           THIRD ROW — Nutrition | Hydration+Goals
       ══════════════════════════════════════════ */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-
         {/* ── Nutrition card ── */}
         {s && (
           <div className="flex flex-col gap-4 rounded-2xl border border-brand-pale bg-white p-5 shadow-[0_4px_20px_-4px_#9567B920]">
@@ -494,15 +545,38 @@ export default function DashboardHome() {
 
             <div className="space-y-4">
               {[
-                { label: "Protein", value: Math.round(s.total_protein), unit: "g", color: "bg-brand-purple", pct: 72 },
-                { label: "Carbs",   value: Math.round(s.total_carbs),   unit: "g", color: "bg-brand-gold",   pct: 65 },
-                { label: "Fat",     value: Math.round(s.total_fat),     unit: "g", color: "bg-brand-mauve",  pct: 58 },
+                {
+                  label: "Protein",
+                  value: Math.round(s.total_protein),
+                  unit: "g",
+                  color: "bg-brand-purple",
+                  pct: 72,
+                },
+                {
+                  label: "Carbs",
+                  value: Math.round(s.total_carbs),
+                  unit: "g",
+                  color: "bg-brand-gold",
+                  pct: 65,
+                },
+                {
+                  label: "Fat",
+                  value: Math.round(s.total_fat),
+                  unit: "g",
+                  color: "bg-brand-mauve",
+                  pct: 58,
+                },
               ].map((m) => (
                 <div key={m.label} className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-brand-slate/65">{m.label}</p>
+                    <p className="text-xs font-semibold text-brand-slate/65">
+                      {m.label}
+                    </p>
                     <p className="text-xs font-bold text-brand-slate">
-                      {m.value.toLocaleString()}<span className="ml-0.5 font-normal text-brand-slate/45">{m.unit}</span>
+                      {m.value.toLocaleString()}
+                      <span className="ml-0.5 font-normal text-brand-slate/45">
+                        {m.unit}
+                      </span>
                     </p>
                   </div>
                   <MiniBar pct={m.pct} color={m.color} />
@@ -517,7 +591,9 @@ export default function DashboardHome() {
               </p>
               <p className="mt-0.5 text-xl font-bold text-brand-slate">
                 {Math.round(s.total_calories_consumed).toLocaleString()}
-                <span className="ml-1 text-sm font-normal text-brand-slate/45">kcal</span>
+                <span className="ml-1 text-sm font-normal text-brand-slate/45">
+                  kcal
+                </span>
               </p>
             </div>
           </div>
@@ -530,7 +606,9 @@ export default function DashboardHome() {
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#38BDF8] to-[#0EA5E9] text-white shadow-sm">
                 <Droplets size={15} />
               </div>
-              <p className="text-sm font-bold text-brand-slate">Hydration &amp; Goals</p>
+              <p className="text-sm font-bold text-brand-slate">
+                Hydration &amp; Goals
+              </p>
             </div>
 
             {/* hydration ring-style stat */}
@@ -539,21 +617,27 @@ export default function DashboardHome() {
                 <p className="text-2xl font-bold text-brand-slate">
                   {(s.total_hydration_ml / 1000).toFixed(1)}
                 </p>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-brand-slate/45">Litres</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-brand-slate/45">
+                  Litres
+                </p>
               </div>
               <div className="flex-1 space-y-1.5">
                 <MiniBar pct={58} color="bg-[#38BDF8]" />
-                <p className="text-[10px] text-brand-slate/45">58% of hydration target</p>
+                <p className="text-[10px] text-brand-slate/45">
+                  58% of hydration target
+                </p>
               </div>
             </div>
 
             {/* cup icons */}
             <div>
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-brand-slate/40">Daily Average</p>
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-brand-slate/40">
+                Daily Average
+              </p>
               <div className="flex gap-1.5">
                 {[...Array(8)].map((_, i) => {
                   const dailyAvg = s.total_hydration_ml / 1000 / 30;
-                  const cups     = Math.round(dailyAvg / 0.25);
+                  const cups = Math.round(dailyAvg / 0.25);
                   return (
                     <div
                       key={i}
@@ -569,10 +653,14 @@ export default function DashboardHome() {
             {/* goals completed */}
             <div className="mt-auto flex items-center justify-between rounded-xl border border-brand-pale bg-brand-bg px-4 py-3">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-brand-slate/40">Goals Completed</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-brand-slate/40">
+                  Goals Completed
+                </p>
                 <p className="mt-0.5 text-xl font-bold text-brand-slate">
                   {s.goals_completed_in_period}
-                  <span className="ml-1 text-xs font-normal text-brand-slate/45">this period</span>
+                  <span className="ml-1 text-xs font-normal text-brand-slate/45">
+                    this period
+                  </span>
                 </p>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-gold to-[#e6a800] text-white shadow-sm">
@@ -582,7 +670,6 @@ export default function DashboardHome() {
           </div>
         )}
       </div>
-
     </div>
   );
 }

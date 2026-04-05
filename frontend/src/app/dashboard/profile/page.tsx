@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Mail, ShieldCheck, UserRound } from "lucide-react";
 import { ProfileAvatarCard, ProfileFormCard } from "@/components/profile";
 import { Card, CardContent } from "@/components/ui";
@@ -66,7 +72,10 @@ export default function ProfilePage() {
       });
 
       if (!response.ok) {
-        const message = await readErrorMessage(response, "Failed to load profile.");
+        const message = await readErrorMessage(
+          response,
+          "Failed to load profile.",
+        );
         throw new Error(message);
       }
 
@@ -79,7 +88,10 @@ export default function ProfilePage() {
     } catch (error) {
       showToast({
         title: "Profile load failed",
-        description: error instanceof Error ? error.message : "Please refresh and try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Please refresh and try again.",
         variant: "error",
       });
     } finally {
@@ -107,7 +119,10 @@ export default function ProfilePage() {
       });
 
       if (!response.ok) {
-        const message = await readErrorMessage(response, "Failed to update profile.");
+        const message = await readErrorMessage(
+          response,
+          "Failed to update profile.",
+        );
         throw new Error(message);
       }
 
@@ -124,7 +139,8 @@ export default function ProfilePage() {
     } catch (error) {
       showToast({
         title: "Update failed",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
         variant: "error",
       });
     } finally {
@@ -154,7 +170,10 @@ export default function ProfilePage() {
       });
 
       if (!response.ok) {
-        const message = await readErrorMessage(response, "Failed to upload avatar.");
+        const message = await readErrorMessage(
+          response,
+          "Failed to upload avatar.",
+        );
         throw new Error(message);
       }
 
@@ -168,7 +187,8 @@ export default function ProfilePage() {
     } catch (error) {
       showToast({
         title: "Upload failed",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
         variant: "error",
       });
     } finally {
@@ -185,7 +205,10 @@ export default function ProfilePage() {
       });
 
       if (!response.ok) {
-        const message = await readErrorMessage(response, "Failed to delete avatar.");
+        const message = await readErrorMessage(
+          response,
+          "Failed to delete avatar.",
+        );
         throw new Error(message);
       }
 
@@ -200,7 +223,8 @@ export default function ProfilePage() {
     } catch (error) {
       showToast({
         title: "Delete failed",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
         variant: "error",
       });
     } finally {
@@ -233,10 +257,13 @@ export default function ProfilePage() {
         <div className="pointer-events-none absolute -right-16 -top-12 h-52 w-52 rounded-full bg-white/10" />
         <div className="pointer-events-none absolute bottom-0 left-1/3 h-20 w-20 rounded-full bg-brand-gold/20 blur-2xl" />
 
-        <p className="text-xs uppercase tracking-[0.2em] text-white/65">Member Profile</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-white/65">
+          Member Profile
+        </p>
         <h1 className="mt-2 text-3xl font-bold">Build Your Premium Identity</h1>
         <p className="mt-2 max-w-2xl text-sm text-white/75">
-          Personalize your profile for smarter plans, better coaching context, and a cleaner fitness journey.
+          Personalize your profile for smarter plans, better coaching context,
+          and a cleaner fitness journey.
         </p>
 
         <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white/90">
@@ -269,7 +296,9 @@ export default function ProfilePage() {
       <Card className="border-0 bg-white shadow-[0_10px_26px_-14px_rgba(81,90,106,0.55)]">
         <CardContent className="grid gap-4 p-5 md:grid-cols-2">
           <div className="rounded-2xl border border-brand-pale bg-brand-bg p-4">
-            <p className="text-xs uppercase tracking-wider text-brand-slate/60">Email</p>
+            <p className="text-xs uppercase tracking-wider text-brand-slate/60">
+              Email
+            </p>
             <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-brand-slate">
               <Mail size={16} className="text-brand-deep" />
               {user?.email}
@@ -277,7 +306,9 @@ export default function ProfilePage() {
           </div>
 
           <div className="rounded-2xl border border-brand-pale bg-brand-bg p-4">
-            <p className="text-xs uppercase tracking-wider text-brand-slate/60">Account Security</p>
+            <p className="text-xs uppercase tracking-wider text-brand-slate/60">
+              Account Security
+            </p>
             <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-brand-slate">
               <ShieldCheck size={16} className="text-brand-deep" />
               Protected by token authentication

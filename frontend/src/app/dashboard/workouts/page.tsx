@@ -121,7 +121,9 @@ type ActivePlanEntry = {
   start_date: string | null;
 };
 
-async function loadPlanExercises(planId: number): Promise<PlanExercisePayload | null> {
+async function loadPlanExercises(
+  planId: number,
+): Promise<PlanExercisePayload | null> {
   const token = getAccessToken();
   if (!token) return null;
 
@@ -286,7 +288,9 @@ export default function WorkoutPage() {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [recommendedPlans, setRecommendedPlans] = useState<WorkoutPlan[]>([]);
-  const [remoteActivePlans, setRemoteActivePlans] = useState<ActivePlanEntry[]>([]);
+  const [remoteActivePlans, setRemoteActivePlans] = useState<ActivePlanEntry[]>(
+    [],
+  );
   const [localActivePlanIds, setLocalActivePlanIds] = useState<number[]>([]);
   const [localDraftPlans, setLocalDraftPlans] = useState<WorkoutPlan[]>([]);
   const [showBuilder, setShowBuilder] = useState(false);
@@ -314,12 +318,16 @@ export default function WorkoutPage() {
           }
         }
 
-        const activeResponse = await fetch(`${API_BASE_URL}/api/workout-plans/active`, {
-          headers: buildAuthHeaders(),
-        });
+        const activeResponse = await fetch(
+          `${API_BASE_URL}/api/workout-plans/active`,
+          {
+            headers: buildAuthHeaders(),
+          },
+        );
 
         if (activeResponse.ok) {
-          const activeData = (await activeResponse.json()) as ActivePlanApiEntry[];
+          const activeData =
+            (await activeResponse.json()) as ActivePlanApiEntry[];
           setRemoteActivePlans(
             activeData.map((entry) => ({
               plan: entry.plan,
@@ -358,7 +366,9 @@ export default function WorkoutPage() {
 
   const mergedActivePlans = useMemo<ActivePlanEntry[]>(() => {
     const combined: ActivePlanEntry[] = [...remoteActivePlans];
-    const existingIds = new Set(remoteActivePlans.map((entry) => entry.plan.id));
+    const existingIds = new Set(
+      remoteActivePlans.map((entry) => entry.plan.id),
+    );
 
     recommendedPlans.forEach((plan) => {
       if (localActivePlanIds.includes(plan.id) && !existingIds.has(plan.id)) {
@@ -376,16 +386,23 @@ export default function WorkoutPage() {
     });
 
     return combined;
-  }, [localDraftPlans, localActivePlanIds, recommendedPlans, remoteActivePlans]);
+  }, [
+    localDraftPlans,
+    localActivePlanIds,
+    recommendedPlans,
+    remoteActivePlans,
+  ]);
 
   const handleViewPlanDetails = async (planId: number) => {
     setIsDetailsOpen(true);
     setLoadingDetails(true);
     setSelectedPlanDetails(null);
 
-    const plan = [...recommendedPlans, ...localDraftPlans, ...remoteActivePlans.map((entry) => entry.plan)].find(
-      (p) => p.id === planId,
-    );
+    const plan = [
+      ...recommendedPlans,
+      ...localDraftPlans,
+      ...remoteActivePlans.map((entry) => entry.plan),
+    ].find((p) => p.id === planId);
     setSelectedPlan(plan || null);
 
     try {
@@ -438,7 +455,9 @@ export default function WorkoutPage() {
       );
 
       if (!response.ok) {
-        throw new Error(await readErrorMessage(response, "Failed to follow plan."));
+        throw new Error(
+          await readErrorMessage(response, "Failed to follow plan."),
+        );
       }
 
       await loadPlans();
@@ -471,7 +490,9 @@ export default function WorkoutPage() {
     const token = getAccessToken();
     if (!token) {
       if (plan.isDraft) {
-        setLocalDraftPlans((prev) => prev.filter((item) => item.id !== plan.id));
+        setLocalDraftPlans((prev) =>
+          prev.filter((item) => item.id !== plan.id),
+        );
       }
       showToast({
         title: "Removed locally",
@@ -491,7 +512,9 @@ export default function WorkoutPage() {
           },
         );
         if (!deleteResp.ok) {
-          throw new Error(await readErrorMessage(deleteResp, "Failed to remove custom plan."));
+          throw new Error(
+            await readErrorMessage(deleteResp, "Failed to remove custom plan."),
+          );
         }
       } else {
         const unfollowResp = await fetch(
@@ -502,7 +525,9 @@ export default function WorkoutPage() {
           },
         );
         if (!unfollowResp.ok) {
-          throw new Error(await readErrorMessage(unfollowResp, "Failed to unfollow plan."));
+          throw new Error(
+            await readErrorMessage(unfollowResp, "Failed to unfollow plan."),
+          );
         }
       }
       await loadPlans();
@@ -550,25 +575,32 @@ export default function WorkoutPage() {
     if (input.generation_mode === "ai") {
       if (token) {
         try {
-          const response = await fetch(`${API_BASE_URL}/api/workout-plans/ai-draft`, {
-            method: "POST",
-            headers: buildAuthHeaders({ "Content-Type": "application/json" }),
-            body: JSON.stringify({
-              title: input.title,
-              description: input.description,
-              level: input.level,
-              duration_days: input.duration_days,
-              focus: input.focus,
-              ai_prompt: input.ai_prompt || "Generate a balanced workout plan",
-            }),
-          });
+          const response = await fetch(
+            `${API_BASE_URL}/api/workout-plans/ai-draft`,
+            {
+              method: "POST",
+              headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+              body: JSON.stringify({
+                title: input.title,
+                description: input.description,
+                level: input.level,
+                duration_days: input.duration_days,
+                focus: input.focus,
+                ai_prompt:
+                  input.ai_prompt || "Generate a balanced workout plan",
+              }),
+            },
+          );
 
           if (response.ok) {
-            const payload = (await response.json()) as AIWorkoutDraftApiResponse;
+            const payload =
+              (await response.json()) as AIWorkoutDraftApiResponse;
             const createdPlan = payload.plan;
 
             setLocalDraftPlans((prev) => {
-              const withoutDuplicate = prev.filter((item) => item.id !== createdPlan.id);
+              const withoutDuplicate = prev.filter(
+                (item) => item.id !== createdPlan.id,
+              );
               return [{ ...createdPlan, isDraft: true }, ...withoutDuplicate];
             });
             setLocalActivePlanIds((prev) =>
@@ -580,7 +612,8 @@ export default function WorkoutPage() {
             setLoadingDetails(true);
             const exercises = await loadPlanExercises(createdPlan.id);
             setSelectedPlanDetails(
-              exercises || buildFallbackPlanDetails({ ...createdPlan, isDraft: true }),
+              exercises ||
+                buildFallbackPlanDetails({ ...createdPlan, isDraft: true }),
             );
             setLoadingDetails(false);
 
@@ -588,7 +621,8 @@ export default function WorkoutPage() {
             showToast({
               title: "AI draft created",
               description:
-                payload.ai_message || "AI workout draft saved and added to your active plans.",
+                payload.ai_message ||
+                "AI workout draft saved and added to your active plans.",
               variant: "achievement",
             });
             return;
@@ -618,18 +652,21 @@ export default function WorkoutPage() {
 
     if (token) {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/workout-plans/custom`, {
-          method: "POST",
-          headers: buildAuthHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify({
-            title: input.title,
-            description: input.description,
-            level: input.level,
-            duration_days: input.duration_days,
-            focus: input.focus,
-            exercises: input.exercises,
-          }),
-        });
+        const response = await fetch(
+          `${API_BASE_URL}/api/workout-plans/custom`,
+          {
+            method: "POST",
+            headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({
+              title: input.title,
+              description: input.description,
+              level: input.level,
+              duration_days: input.duration_days,
+              focus: input.focus,
+              exercises: input.exercises,
+            }),
+          },
+        );
 
         if (response.ok) {
           await loadPlans();

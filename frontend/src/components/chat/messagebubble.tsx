@@ -18,7 +18,10 @@ function renderMarkdown(text: string) {
   const renderInline = (value: string, keyPrefix: string) =>
     value.split(/(\*\*[^*]+\*\*)/).map((part, idx) =>
       part.startsWith("**") && part.endsWith("**") ? (
-        <strong key={`${keyPrefix}-${idx}`} className="font-bold text-brand-slate">
+        <strong
+          key={`${keyPrefix}-${idx}`}
+          className="font-bold text-brand-slate"
+        >
           {part.slice(2, -2)}
         </strong>
       ) : (
@@ -33,17 +36,26 @@ function renderMarkdown(text: string) {
 
     if (/^\*\*[^*]+:\*\*$/.test(trimmed)) {
       return (
-        <p key={i} className="text-sm font-semibold leading-relaxed text-brand-slate">
+        <p
+          key={i}
+          className="text-sm font-semibold leading-relaxed text-brand-slate"
+        >
           {trimmed.slice(2, -2)}
         </p>
       );
     }
 
-    if (trimmed.startsWith("• ") || trimmed.startsWith("* ") || trimmed.startsWith("- "))
+    if (
+      trimmed.startsWith("• ") ||
+      trimmed.startsWith("* ") ||
+      trimmed.startsWith("- ")
+    )
       return (
         <div key={i} className="flex items-start gap-2 text-sm">
           <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-brand-purple" />
-          <span>{renderInline(trimmed.replace(/^[•*-]\s+/, ""), `bullet-${i}`)}</span>
+          <span>
+            {renderInline(trimmed.replace(/^[•*-]\s+/, ""), `bullet-${i}`)}
+          </span>
         </div>
       );
 

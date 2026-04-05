@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Pencil, Trash2, TrendingDown, TrendingUp, Minus, Ruler } from "lucide-react";
+import {
+  Pencil,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  Minus,
+  Ruler,
+} from "lucide-react";
 import { API_BASE_URL, buildAuthHeaders, readErrorMessage } from "@/Utils/api";
 
 type MeasurementKey =
@@ -138,7 +145,9 @@ export default function BodyMeasurementsCard() {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [selectedMeasurementId, setSelectedMeasurementId] = useState<number | null>(null);
+  const [selectedMeasurementId, setSelectedMeasurementId] = useState<
+    number | null
+  >(null);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const [form, setForm] = useState<MeasurementFormState>({
     date: new Date().toISOString().slice(0, 10),
@@ -162,9 +171,12 @@ export default function BodyMeasurementsCard() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/progress/measurements/card`, {
-        headers: buildAuthHeaders(),
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/api/progress/measurements/card`,
+        {
+          headers: buildAuthHeaders(),
+        },
+      );
       if (!res.ok) {
         setError(await readErrorMessage(res, "Could not load measurements"));
         setMeasurements([]);
@@ -186,11 +198,15 @@ export default function BodyMeasurementsCard() {
         setLastUpdated(null);
       }
 
-      const historyRes = await fetch(`${API_BASE_URL}/api/progress/measurements/history?limit=6`, {
-        headers: buildAuthHeaders(),
-      });
+      const historyRes = await fetch(
+        `${API_BASE_URL}/api/progress/measurements/history?limit=6`,
+        {
+          headers: buildAuthHeaders(),
+        },
+      );
       if (historyRes.ok) {
-        const historyJson = (await historyRes.json()) as MeasurementHistoryItem[];
+        const historyJson =
+          (await historyRes.json()) as MeasurementHistoryItem[];
         setHistory(historyJson);
       } else {
         setHistory([]);
@@ -219,21 +235,24 @@ export default function BodyMeasurementsCard() {
     });
   }, []);
 
-  const fillFormFromMeasurement = useCallback((item: MeasurementHistoryItem) => {
-    setSelectedMeasurementId(item.id);
-    setForm({
-      date: item.date,
-      weight: item.weight?.toString() || "",
-      body_fat_percentage: item.body_fat_percentage?.toString() || "",
-      chest: item.chest?.toString() || "",
-      waist: item.waist?.toString() || "",
-      arms: item.arms?.toString() || "",
-      legs: item.legs?.toString() || "",
-      notes: item.notes || "",
-    });
-    setShowForm(true);
-    setSubmitMessage(null);
-  }, []);
+  const fillFormFromMeasurement = useCallback(
+    (item: MeasurementHistoryItem) => {
+      setSelectedMeasurementId(item.id);
+      setForm({
+        date: item.date,
+        weight: item.weight?.toString() || "",
+        body_fat_percentage: item.body_fat_percentage?.toString() || "",
+        chest: item.chest?.toString() || "",
+        waist: item.waist?.toString() || "",
+        arms: item.arms?.toString() || "",
+        legs: item.legs?.toString() || "",
+        notes: item.notes || "",
+      });
+      setShowForm(true);
+      setSubmitMessage(null);
+    },
+    [],
+  );
 
   useEffect(() => {
     fetchData();
@@ -277,19 +296,25 @@ export default function BodyMeasurementsCard() {
           ? `${API_BASE_URL}/api/progress/measurements/${selectedMeasurementId}`
           : `${API_BASE_URL}/api/progress/measurements`,
         {
-        method: isEditing ? "PATCH" : "POST",
-        headers: buildAuthHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify(payload),
-        }
+          method: isEditing ? "PATCH" : "POST",
+          headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify(payload),
+        },
       );
 
       if (!res.ok) {
-        setSubmitMessage(await readErrorMessage(res, "Could not save measurement"));
+        setSubmitMessage(
+          await readErrorMessage(res, "Could not save measurement"),
+        );
         setSubmitting(false);
         return;
       }
 
-      setSubmitMessage(isEditing ? "Measurement updated successfully." : "Measurement logged successfully.");
+      setSubmitMessage(
+        isEditing
+          ? "Measurement updated successfully."
+          : "Measurement logged successfully.",
+      );
       resetForm();
       await fetchData();
     } catch {
@@ -341,14 +366,19 @@ export default function BodyMeasurementsCard() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="mb-5 rounded-2xl border border-brand-pale bg-brand-bg p-4">
+        <form
+          onSubmit={handleSubmit}
+          className="mb-5 rounded-2xl border border-brand-pale bg-brand-bg p-4"
+        >
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <label className="text-xs text-brand-slate/70">
               Date
               <input
                 type="date"
                 value={form.date}
-                onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, date: e.target.value }))
+                }
                 className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
                 required
               />
@@ -360,7 +390,9 @@ export default function BodyMeasurementsCard() {
                 type="number"
                 step="0.1"
                 value={form.weight}
-                onChange={(e) => setForm((prev) => ({ ...prev, weight: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, weight: e.target.value }))
+                }
                 className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
               />
             </label>
@@ -371,7 +403,12 @@ export default function BodyMeasurementsCard() {
                 type="number"
                 step="0.1"
                 value={form.body_fat_percentage}
-                onChange={(e) => setForm((prev) => ({ ...prev, body_fat_percentage: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    body_fat_percentage: e.target.value,
+                  }))
+                }
                 className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
               />
             </label>
@@ -382,7 +419,9 @@ export default function BodyMeasurementsCard() {
                 type="number"
                 step="0.1"
                 value={form.chest}
-                onChange={(e) => setForm((prev) => ({ ...prev, chest: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, chest: e.target.value }))
+                }
                 className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
               />
             </label>
@@ -393,7 +432,9 @@ export default function BodyMeasurementsCard() {
                 type="number"
                 step="0.1"
                 value={form.waist}
-                onChange={(e) => setForm((prev) => ({ ...prev, waist: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, waist: e.target.value }))
+                }
                 className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
               />
             </label>
@@ -404,7 +445,9 @@ export default function BodyMeasurementsCard() {
                 type="number"
                 step="0.1"
                 value={form.arms}
-                onChange={(e) => setForm((prev) => ({ ...prev, arms: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, arms: e.target.value }))
+                }
                 className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
               />
             </label>
@@ -415,7 +458,9 @@ export default function BodyMeasurementsCard() {
                 type="number"
                 step="0.1"
                 value={form.legs}
-                onChange={(e) => setForm((prev) => ({ ...prev, legs: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, legs: e.target.value }))
+                }
                 className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
               />
             </label>
@@ -425,7 +470,9 @@ export default function BodyMeasurementsCard() {
               <input
                 type="text"
                 value={form.notes}
-                onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, notes: e.target.value }))
+                }
                 className="mt-1 w-full rounded-lg border border-brand-pale bg-white px-2 py-1.5 text-sm"
                 placeholder="Optional"
               />
@@ -498,8 +545,12 @@ export default function BodyMeasurementsCard() {
       {!loading && !error && history.length > 0 && (
         <div className="mt-5 overflow-hidden rounded-2xl border border-brand-pale bg-white">
           <div className="border-b border-brand-pale px-4 py-3">
-            <p className="text-sm font-semibold text-brand-slate">Recent logs</p>
-            <p className="text-xs text-brand-slate/50">Latest measurement entries you saved</p>
+            <p className="text-sm font-semibold text-brand-slate">
+              Recent logs
+            </p>
+            <p className="text-xs text-brand-slate/50">
+              Latest measurement entries you saved
+            </p>
           </div>
 
           <div className="overflow-x-auto">
@@ -527,7 +578,9 @@ export default function BodyMeasurementsCard() {
                       })}
                     </td>
                     <td className="px-4 py-3">{item.weight ?? "-"}</td>
-                    <td className="px-4 py-3">{item.body_fat_percentage ?? "-"}</td>
+                    <td className="px-4 py-3">
+                      {item.body_fat_percentage ?? "-"}
+                    </td>
                     <td className="px-4 py-3">{item.chest ?? "-"}</td>
                     <td className="px-4 py-3">{item.waist ?? "-"}</td>
                     <td className="px-4 py-3">{item.arms ?? "-"}</td>
@@ -573,10 +626,14 @@ export default function BodyMeasurementsCard() {
                                 resetForm();
                               }
 
-                              setSubmitMessage("Measurement deleted successfully.");
+                              setSubmitMessage(
+                                "Measurement deleted successfully.",
+                              );
                               await fetchData();
                             } catch {
-                              setSubmitMessage("Network error while deleting measurement");
+                              setSubmitMessage(
+                                "Network error while deleting measurement",
+                              );
                             }
                           }}
                           className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"

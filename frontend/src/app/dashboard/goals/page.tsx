@@ -6,7 +6,12 @@ import FloatingAiButton from "@/components/goals/FloatingAiButton";
 import AIGoalAssistant from "@/components/diet-plan/AI_chat";
 import type { ActiveGoal } from "@/components/goals/types";
 import { useToast } from "@/components/ui";
-import { API_BASE_URL, buildAuthHeaders, getAuthToken, readErrorMessage } from "@/Utils/api";
+import {
+  API_BASE_URL,
+  buildAuthHeaders,
+  getAuthToken,
+  readErrorMessage,
+} from "@/Utils/api";
 import {
   buildGoalDescription,
   defaultUnitByCategory,
@@ -39,14 +44,22 @@ export default function GoalsPage() {
     const category = normalizeGoalCategory(payload.category);
     const targetValue = Math.max(1, Number(payload.target_value || 100));
     const currentValue = Math.max(0, Number(payload.current_value || 0));
-    const unit = String(payload.target_unit || payload.unit || defaultUnitByCategory(category));
+    const unit = String(
+      payload.target_unit || payload.unit || defaultUnitByCategory(category),
+    );
     const durationDays = Math.max(7, Number(payload.duration_days || 30));
     const targetDate = new Date(Date.now() + durationDays * 86_400_000)
       .toISOString()
       .slice(0, 10);
-    const description = String(payload.description || `AI vision goal for ${category.toLowerCase()} improvement.`);
+    const description = String(
+      payload.description ||
+        `AI vision goal for ${category.toLowerCase()} improvement.`,
+    );
     const steps = Array.isArray(payload.ai_suggestions)
-      ? payload.ai_suggestions.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+      ? payload.ai_suggestions.filter(
+          (item): item is string =>
+            typeof item === "string" && item.trim().length > 0,
+        )
       : inferFollowSteps(category, title);
 
     let goalId = Date.now();
@@ -80,7 +93,10 @@ export default function GoalsPage() {
       });
 
       if (!response.ok) {
-        const message = await readErrorMessage(response, "Failed to save goal.");
+        const message = await readErrorMessage(
+          response,
+          "Failed to save goal.",
+        );
         throw new Error(message);
       }
 
@@ -91,13 +107,17 @@ export default function GoalsPage() {
     } catch (error) {
       showToast({
         title: "Goal save failed",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
         variant: "error",
       });
       return;
     }
 
-    const progress = Math.max(0, Math.min(100, Math.round((currentValue / targetValue) * 100)));
+    const progress = Math.max(
+      0,
+      Math.min(100, Math.round((currentValue / targetValue) * 100)),
+    );
 
     setAiCreatedGoal({
       id: goalId,

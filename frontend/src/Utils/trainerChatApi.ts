@@ -38,14 +38,19 @@ function parseId(id: string): number {
   return num;
 }
 
-async function parseJsonOrThrow<T>(response: Response, fallbackMessage: string): Promise<T> {
+async function parseJsonOrThrow<T>(
+  response: Response,
+  fallbackMessage: string,
+): Promise<T> {
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, fallbackMessage));
   }
   return response.json() as Promise<T>;
 }
 
-export async function fetchConversations(search?: string): Promise<ChatApiConversation[]> {
+export async function fetchConversations(
+  search?: string,
+): Promise<ChatApiConversation[]> {
   const query = new URLSearchParams();
   if (search?.trim()) {
     query.set("q", search.trim());
@@ -53,32 +58,54 @@ export async function fetchConversations(search?: string): Promise<ChatApiConver
   query.set("limit", "80");
   query.set("offset", "0");
 
-  const response = await fetch(`${API_BASE_URL}/api/trainer-chat/conversations?${query.toString()}`, {
-    headers: buildAuthHeaders(),
-    cache: "no-store",
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/api/trainer-chat/conversations?${query.toString()}`,
+    {
+      headers: buildAuthHeaders(),
+      cache: "no-store",
+    },
+  );
 
-  return parseJsonOrThrow<ChatApiConversation[]>(response, "Failed to load conversations");
+  return parseJsonOrThrow<ChatApiConversation[]>(
+    response,
+    "Failed to load conversations",
+  );
 }
 
-export async function createConversation(title?: string): Promise<ChatApiConversation> {
-  const response = await fetch(`${API_BASE_URL}/api/trainer-chat/conversations`, {
-    method: "POST",
-    headers: buildAuthHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ title }),
-  });
+export async function createConversation(
+  title?: string,
+): Promise<ChatApiConversation> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/trainer-chat/conversations`,
+    {
+      method: "POST",
+      headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ title }),
+    },
+  );
 
-  return parseJsonOrThrow<ChatApiConversation>(response, "Failed to create conversation");
+  return parseJsonOrThrow<ChatApiConversation>(
+    response,
+    "Failed to create conversation",
+  );
 }
 
-export async function fetchConversation(conversationId: string): Promise<ChatApiConversationDetail> {
+export async function fetchConversation(
+  conversationId: string,
+): Promise<ChatApiConversationDetail> {
   const id = parseId(conversationId);
-  const response = await fetch(`${API_BASE_URL}/api/trainer-chat/conversations/${id}`, {
-    headers: buildAuthHeaders(),
-    cache: "no-store",
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/api/trainer-chat/conversations/${id}`,
+    {
+      headers: buildAuthHeaders(),
+      cache: "no-store",
+    },
+  );
 
-  return parseJsonOrThrow<ChatApiConversationDetail>(response, "Failed to load conversation");
+  return parseJsonOrThrow<ChatApiConversationDetail>(
+    response,
+    "Failed to load conversation",
+  );
 }
 
 export async function sendMessage(payload: {
@@ -91,14 +118,17 @@ export async function sendMessage(payload: {
   request: ChatApiMessageRequest;
 }> {
   const id = parseId(payload.conversationId);
-  const response = await fetch(`${API_BASE_URL}/api/trainer-chat/conversations/${id}/messages`, {
-    method: "POST",
-    headers: buildAuthHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({
-      text: payload.text,
-      image_data: payload.imageData ?? null,
-    }),
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/api/trainer-chat/conversations/${id}/messages`,
+    {
+      method: "POST",
+      headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({
+        text: payload.text,
+        image_data: payload.imageData ?? null,
+      }),
+    },
+  );
 
   return parseJsonOrThrow(response, "Failed to send message");
 }
@@ -116,7 +146,10 @@ export async function pollMessageStatus(
     },
   );
 
-  return parseJsonOrThrow<ChatApiMessageRequest>(response, "Failed to fetch message status");
+  return parseJsonOrThrow<ChatApiMessageRequest>(
+    response,
+    "Failed to fetch message status",
+  );
 }
 
 export async function updateConversation(
@@ -124,24 +157,37 @@ export async function updateConversation(
   payload: { pinned?: boolean; title?: string },
 ): Promise<ChatApiConversation> {
   const id = parseId(conversationId);
-  const response = await fetch(`${API_BASE_URL}/api/trainer-chat/conversations/${id}`, {
-    method: "PATCH",
-    headers: buildAuthHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify(payload),
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/api/trainer-chat/conversations/${id}`,
+    {
+      method: "PATCH",
+      headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(payload),
+    },
+  );
 
-  return parseJsonOrThrow<ChatApiConversation>(response, "Failed to update conversation");
+  return parseJsonOrThrow<ChatApiConversation>(
+    response,
+    "Failed to update conversation",
+  );
 }
 
-export async function deleteConversation(conversationId: string): Promise<void> {
+export async function deleteConversation(
+  conversationId: string,
+): Promise<void> {
   const id = parseId(conversationId);
-  const response = await fetch(`${API_BASE_URL}/api/trainer-chat/conversations/${id}`, {
-    method: "DELETE",
-    headers: buildAuthHeaders(),
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/api/trainer-chat/conversations/${id}`,
+    {
+      method: "DELETE",
+      headers: buildAuthHeaders(),
+    },
+  );
 
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response, "Failed to delete conversation"));
+    throw new Error(
+      await readErrorMessage(response, "Failed to delete conversation"),
+    );
   }
 }
 
@@ -150,11 +196,17 @@ export async function updateMessageFeedback(
   liked: boolean | null,
 ): Promise<ChatApiMessage> {
   const id = parseId(messageId);
-  const response = await fetch(`${API_BASE_URL}/api/trainer-chat/messages/${id}/feedback`, {
-    method: "PATCH",
-    headers: buildAuthHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ liked }),
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/api/trainer-chat/messages/${id}/feedback`,
+    {
+      method: "PATCH",
+      headers: buildAuthHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ liked }),
+    },
+  );
 
-  return parseJsonOrThrow<ChatApiMessage>(response, "Failed to update feedback");
+  return parseJsonOrThrow<ChatApiMessage>(
+    response,
+    "Failed to update feedback",
+  );
 }

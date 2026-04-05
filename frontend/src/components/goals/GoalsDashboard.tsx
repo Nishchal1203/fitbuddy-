@@ -2,7 +2,12 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { CATEGORIES } from "./data";
-import type { ActiveGoal, CompletedGoal, GoalCategory, GoalFormValues } from "./types";
+import type {
+  ActiveGoal,
+  CompletedGoal,
+  GoalCategory,
+  GoalFormValues,
+} from "./types";
 import GoalsHeader from "./GoalsHeader";
 import GoalCategoryFilter from "./GoalCategoryFilter";
 import ActiveGoalsSection from "./ActiveGoalsSection";
@@ -35,48 +40,58 @@ const GoalsDashboard: React.FC<GoalsDashboardProps> = ({ aiCreatedGoal }) => {
   const [selectedGoal, setSelectedGoal] = useState<ActiveGoal | null>(null);
   const [editingGoal, setEditingGoal] = useState<ActiveGoal | null>(null);
 
-  const mapGoalRecord = useCallback((goal: {
-    id: number;
-    title: string;
-    description: string | null;
-    target_date: string | null;
-    is_completed: boolean;
-  }) => {
-    const parsed = parseGoalDescription(goal.description);
-    const category = parsed.metadata?.category || "Fitness";
-    const targetValue = parsed.metadata?.targetValue ?? 100;
-    const currentValue = parsed.metadata?.currentValue ?? 0;
-    const unit = parsed.metadata?.unit || defaultUnitByCategory(category);
-    const steps =
-      parsed.metadata?.steps.length
+  const mapGoalRecord = useCallback(
+    (goal: {
+      id: number;
+      title: string;
+      description: string | null;
+      target_date: string | null;
+      is_completed: boolean;
+    }) => {
+      const parsed = parseGoalDescription(goal.description);
+      const category = parsed.metadata?.category || "Fitness";
+      const targetValue = parsed.metadata?.targetValue ?? 100;
+      const currentValue = parsed.metadata?.currentValue ?? 0;
+      const unit = parsed.metadata?.unit || defaultUnitByCategory(category);
+      const steps = parsed.metadata?.steps.length
         ? parsed.metadata.steps
         : inferFollowSteps(category, goal.title);
 
-    return {
-      id: goal.id,
-      title: goal.title,
-      category,
-      progress: goal.is_completed ? 100 : toProgress(currentValue, targetValue),
-      currentValue,
-      targetValue,
-      unit,
-      dueLabel: toDueLabel(goal.target_date),
-      description: parsed.cleanDescription,
-      targetDate: goal.target_date,
-      steps,
-    } as ActiveGoal;
-  }, []);
+      return {
+        id: goal.id,
+        title: goal.title,
+        category,
+        progress: goal.is_completed
+          ? 100
+          : toProgress(currentValue, targetValue),
+        currentValue,
+        targetValue,
+        unit,
+        dueLabel: toDueLabel(goal.target_date),
+        description: parsed.cleanDescription,
+        targetDate: goal.target_date,
+        steps,
+      } as ActiveGoal;
+    },
+    [],
+  );
 
   const fetchGoals = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/goals/?include_completed=true`, {
-        method: "GET",
-        headers: buildAuthHeaders(),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/goals/?include_completed=true`,
+        {
+          method: "GET",
+          headers: buildAuthHeaders(),
+        },
+      );
 
       if (!response.ok) {
-        const message = await readErrorMessage(response, "Failed to load goals.");
+        const message = await readErrorMessage(
+          response,
+          "Failed to load goals.",
+        );
         throw new Error(message);
       }
 
@@ -88,7 +103,9 @@ const GoalsDashboard: React.FC<GoalsDashboardProps> = ({ aiCreatedGoal }) => {
         is_completed: boolean;
       }>;
 
-      setActiveGoals(rows.filter((goal) => !goal.is_completed).map(mapGoalRecord));
+      setActiveGoals(
+        rows.filter((goal) => !goal.is_completed).map(mapGoalRecord),
+      );
       setCompletedGoals(
         rows
           .filter((goal) => goal.is_completed)
@@ -105,7 +122,8 @@ const GoalsDashboard: React.FC<GoalsDashboardProps> = ({ aiCreatedGoal }) => {
     } catch (error) {
       showToast({
         title: "Could not load goals",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
         variant: "error",
       });
     } finally {
@@ -137,7 +155,10 @@ const GoalsDashboard: React.FC<GoalsDashboardProps> = ({ aiCreatedGoal }) => {
       });
 
       if (!response.ok) {
-        const message = await readErrorMessage(response, "Failed to mark goal complete.");
+        const message = await readErrorMessage(
+          response,
+          "Failed to mark goal complete.",
+        );
         throw new Error(message);
       }
 
@@ -151,7 +172,8 @@ const GoalsDashboard: React.FC<GoalsDashboardProps> = ({ aiCreatedGoal }) => {
     } catch (error) {
       showToast({
         title: "Completion failed",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
         variant: "error",
       });
     }
@@ -167,7 +189,9 @@ const GoalsDashboard: React.FC<GoalsDashboardProps> = ({ aiCreatedGoal }) => {
           currentValue: values.currentValue,
           targetValue: values.targetValue,
           unit: values.unit,
-          steps: values.steps.length ? values.steps : inferFollowSteps(values.category, values.title),
+          steps: values.steps.length
+            ? values.steps
+            : inferFollowSteps(values.category, values.title),
         }),
         target_date: values.targetDate || null,
         is_completed: false,
@@ -185,7 +209,10 @@ const GoalsDashboard: React.FC<GoalsDashboardProps> = ({ aiCreatedGoal }) => {
       });
 
       if (!response.ok) {
-        const message = await readErrorMessage(response, "Failed to save goal.");
+        const message = await readErrorMessage(
+          response,
+          "Failed to save goal.",
+        );
         throw new Error(message);
       }
 
@@ -205,7 +232,8 @@ const GoalsDashboard: React.FC<GoalsDashboardProps> = ({ aiCreatedGoal }) => {
     } catch (error) {
       showToast({
         title: "Save failed",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
         variant: "error",
       });
     } finally {
@@ -224,7 +252,10 @@ const GoalsDashboard: React.FC<GoalsDashboardProps> = ({ aiCreatedGoal }) => {
       });
 
       if (!response.ok) {
-        const message = await readErrorMessage(response, "Failed to delete goal.");
+        const message = await readErrorMessage(
+          response,
+          "Failed to delete goal.",
+        );
         throw new Error(message);
       }
 
@@ -238,7 +269,8 @@ const GoalsDashboard: React.FC<GoalsDashboardProps> = ({ aiCreatedGoal }) => {
     } catch (error) {
       showToast({
         title: "Delete failed",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
         variant: "error",
       });
     }
@@ -258,7 +290,7 @@ const GoalsDashboard: React.FC<GoalsDashboardProps> = ({ aiCreatedGoal }) => {
         </div>
       </div>
     );
-  };
+  }
 
   return (
     <div className="space-y-8 p-6">
