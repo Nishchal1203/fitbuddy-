@@ -1,5 +1,6 @@
 # this file is for hashing the password and creating the access token and decoding the access token automatically taking from the config.py file
 from datetime import datetime, timedelta, timezone
+import secrets
 from typing import Any, Optional
 
 from jose import jwt, JWTError
@@ -31,13 +32,27 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
 	return pwd_context.verify(plain_password, password_hash)
 
 
+def _create_token(subject: str | int, token_use: str, expires_delta: timedelta) -> str:
+	expire = datetime.now(timezone.utc) + expires_delta
+	to_encode: dict[str, Any] = {"sub": str(subject), "exp": expire, "token_use": token_use}
+	encoded_jwt = jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+	return encoded_jwt
+
+
 def create_access_token(subject: str | int, expires_delta: Optional[timedelta] = None) -> str:
 	if expires_delta is None:
 		expires_delta = timedelta(minutes=settings.access_token_expire_minutes)
-	expire = datetime.now(timezone.utc) + expires_delta
-	to_encode: dict[str, Any] = {"sub": str(subject), "exp": expire}
-	encoded_jwt = jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
-	return encoded_jwt
+	return _create_token(subject, "access", expires_delta)
+
+
+def create_refresh_token(subject: str | int, expires_delta: Optional[timedelta] = None) -> str:
+	if expires_delta is None:
+		expires_delta = timedelta(days=settings.refresh_token_expire_days)
+	return _create_token(subject, "refresh", expires_delta)
+
+
+def create_unusable_password_hash() -> str:
+	return get_password_hash(secrets.token_urlsafe(48))
 
 
 def decode_token(token: str) -> dict[str, Any] | None:

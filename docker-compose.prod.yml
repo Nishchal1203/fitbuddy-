@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   db:
@@ -20,6 +18,41 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: fitbuddy_rabbitmq_prod
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-fitbuddy}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-fitbuddy123}
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data_prod:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: fitbuddy_redis_prod
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
   # FastAPI Backend
   backend:
     build:
@@ -31,13 +64,24 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-in-production}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-fitbuddy}:${RABBITMQ_DEFAULT_PASS:-fitbuddy123}@rabbitmq:5672/
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER:-fitbuddy}
+      RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-fitbuddy123}
+      REDIS_URL: redis://redis:6379/0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
     ports:
       - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - ./alembic:/app/alembic
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     command: >
       sh -c "
         alembic upgrade head &&
@@ -50,5 +94,59 @@ services:
       retries: 3
     restart: unless-stopped
 
+  # Celery Worker
+  celery-worker:
+    build:
+      context: .
+      dockerfile: backend/celery_worker/Dockerfile
+    container_name: fitbuddy_celery_worker_prod
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:-root123}@db:5432/postgres
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-fitbuddy}:${RABBITMQ_DEFAULT_PASS:-fitbuddy123}@rabbitmq:5672/
+      REDIS_URL: redis://redis:6379/0
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER:-fitbuddy}
+      RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-fitbuddy123}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Celery Beat Scheduler
+  celery-beat:
+    build:
+      context: .
+      dockerfile: backend/celery_worker/Dockerfile.beat
+    container_name: fitbuddy_celery_beat_prod
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:-root123}@db:5432/postgres
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-fitbuddy}:${RABBITMQ_DEFAULT_PASS:-fitbuddy123}@rabbitmq:5672/
+      REDIS_URL: redis://redis:6379/0
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER:-fitbuddy}
+      RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-fitbuddy123}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   postgres_data_prod:
+  rabbitmq_data_prod:
+  redis_data_prod:

@@ -9,8 +9,10 @@ from app.models.user import User
 from app.models.progress import BodyMeasurement, UserAchievement
 from app.schemas.progress import (
     AchievementBadgeCard,
+    BodyMeasurementsCardResponse,
     BodyMeasurementCreate,
     BodyMeasurementResponse,
+    BodyMeasurementUpdate,
     MonthlySummaryCardResponse,
     StreakResponse,
     WeightHistoryEntry,
@@ -51,6 +53,30 @@ def get_weight_history(
 ):
     raw = progress_service.weight_history_for_chart(db=db, user_id=current_user.id)
     return [WeightHistoryEntry(**row) for row in raw]
+
+
+@router.get("/measurements/card", response_model=BodyMeasurementsCardResponse)
+def get_body_measurements_card(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return progress_service.get_body_measurements_card(db=db, user_id=current_user.id)
+
+
+@router.get("/measurements/history", response_model=List[BodyMeasurementResponse])
+def get_measurement_history(
+    limit: int = Query(8, ge=1, le=30),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    measurements = (
+        db.query(BodyMeasurement)
+        .filter(BodyMeasurement.owner_id == current_user.id)
+        .order_by(BodyMeasurement.date.desc())
+        .limit(limit)
+        .all()
+    )
+    return measurements
 
 
 @router.get("/trend/weight", response_model=WeightTrendResponse)
@@ -102,6 +128,69 @@ def log_body_measurement(
     db.commit()
     db.refresh(new_measurement)
     return new_measurement
+
+
+@router.patch("/measurements/{measurement_id}", response_model=BodyMeasurementResponse)
+def update_body_measurement(
+    measurement_id: int,
+    measurement_in: BodyMeasurementUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    measurement = (
+        db.query(BodyMeasurement)
+        .filter(
+            BodyMeasurement.id == measurement_id,
+            BodyMeasurement.owner_id == current_user.id,
+        )
+        .first()
+    )
+    if not measurement:
+        raise HTTPException(status_code=404, detail="Measurement not found")
+
+    incoming = measurement_in.model_dump(exclude_unset=True)
+    if "date" in incoming:
+        duplicate = (
+            db.query(BodyMeasurement)
+            .filter(
+                BodyMeasurement.owner_id == current_user.id,
+                BodyMeasurement.date == incoming["date"],
+                BodyMeasurement.id != measurement_id,
+            )
+            .first()
+        )
+        if duplicate:
+            raise HTTPException(status_code=400, detail="A measurement already exists for that date.")
+
+    for field, value in incoming.items():
+        setattr(measurement, field, value)
+
+    db.add(measurement)
+    db.commit()
+    db.refresh(measurement)
+    return measurement
+
+
+@router.delete("/measurements/{measurement_id}")
+def delete_body_measurement(
+    measurement_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    measurement = (
+        db.query(BodyMeasurement)
+        .filter(
+            BodyMeasurement.id == measurement_id,
+            BodyMeasurement.owner_id == current_user.id,
+        )
+        .first()
+    )
+    if not measurement:
+        raise HTTPException(status_code=404, detail="Measurement not found")
+
+    db.delete(measurement)
+    db.commit()
+    return {"message": "Measurement deleted successfully."}
 
 
 @router.get("/measurements/latest", response_model=BodyMeasurementResponse)

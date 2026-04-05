@@ -43,6 +43,9 @@ def on_startup():
     # Uses IF NOT EXISTS (PostgreSQL 9.6+) and individual try/except per statement
     # so a single failure never blocks the remaining patches.
     _ddl_statements = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(32) NOT NULL DEFAULT 'local'",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub VARCHAR(255)",
+        "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_google_sub ON users (google_sub)",
         "ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS duration_minutes INTEGER",
         "ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS calories_burned NUMERIC",
         "ALTER TABLE workouts ADD COLUMN IF NOT EXISTS level VARCHAR(50)",

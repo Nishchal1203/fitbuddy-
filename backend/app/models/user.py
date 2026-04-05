@@ -32,6 +32,8 @@ class User(Base):
 	full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
 	password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
 	experience_level: Mapped[str | None] = mapped_column(String(255), nullable=True)
+	auth_provider: Mapped[str] = mapped_column(String(32), nullable=False, default="local")
+	google_sub: Mapped[str | None] = mapped_column(String(255), unique=True, index=True, nullable=True)
 
 	exercises: Mapped[list[Exercise]] = relationship(back_populates="owner", cascade="all, delete-orphan")
 	workouts: Mapped[list[WorkoutSession]] = relationship(back_populates="owner" , cascade="all, delete-orphan")

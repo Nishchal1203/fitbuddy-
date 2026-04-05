@@ -2,19 +2,30 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { bootstrapAuthSession } from "@/Utils/api";
 
 export default function Home() {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
-    const token = localStorage.getItem("access_token");
-    if (token) {
-      router.replace("/dashboard");
-    } else {
-      router.replace("/login");
-    }
+    let cancelled = false;
+
+    const resolveDestination = async () => {
+      setIsMounted(true);
+      const token = await bootstrapAuthSession();
+      if (cancelled) {
+        return;
+      }
+
+      router.replace(token ? "/dashboard" : "/login");
+    };
+
+    void resolveDestination();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   if (!isMounted) {
