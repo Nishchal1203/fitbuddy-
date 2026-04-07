@@ -72,7 +72,15 @@ function parseMeasurements(api: ApiMeasurements): MeasurementEntry[] {
   ];
 
   return map
-    .filter((m) => api[m.key] !== undefined)
+    .filter((m) => {
+      const v = api[m.key];
+      return (
+        v != null &&
+        typeof v === "object" &&
+        typeof v.current === "number" &&
+        typeof v.previous === "number"
+      );
+    })
     .map((m) => ({
       ...m,
       current: api[m.key]!.current,
