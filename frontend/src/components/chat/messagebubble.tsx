@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
-import AiIcon from "@/assets/AI_icon.svg";
+import AiIcon from "@/assets/ai_bot.svg";
 import UserIcon from "@/assets/user.svg";
 import type { Message } from "./types";
 
@@ -124,7 +124,7 @@ export default function MessageBubble({ message, onLike, onDislike }: Props) {
   return (
     <div className="flex items-end gap-2.5 px-4">
       <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-bg shadow-sm">
-        <Image src={AiIcon} alt="AI Trainer" width={20} height={20} />
+        <Image src={AiIcon} alt="AI Trainer" width={25} height={25} />
       </div>
 
       <div className="max-w-[84%] space-y-1 md:max-w-[86%]">
