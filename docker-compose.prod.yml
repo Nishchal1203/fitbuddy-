@@ -56,7 +56,7 @@ services:
   # FastAPI Backend
   backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile.backend
     container_name: fitbuddy_backend_prod
     environment:
@@ -64,6 +64,7 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-in-production}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:3000}
       RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-fitbuddy}:${RABBITMQ_DEFAULT_PASS:-fitbuddy123}@rabbitmq:5672/
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
@@ -94,11 +95,26 @@ services:
       retries: 3
     restart: unless-stopped
 
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fitbuddy_frontend_prod
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
   # Celery Worker
   celery-worker:
     build:
-      context: .
-      dockerfile: backend/celery_worker/Dockerfile
+      context: ./backend
+      dockerfile: celery_worker/Dockerfile
     container_name: fitbuddy_celery_worker_prod
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:-root123}@db:5432/postgres
@@ -123,8 +139,8 @@ services:
   # Celery Beat Scheduler
   celery-beat:
     build:
-      context: .
-      dockerfile: backend/celery_worker/Dockerfile.beat
+      context: ./backend
+      dockerfile: celery_worker/Dockerfile.beat
     container_name: fitbuddy_celery_beat_prod
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:-root123}@db:5432/postgres

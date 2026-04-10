@@ -16,16 +16,16 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY backend/requirements.txt .
+COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY backend/app ./app
-COPY backend/alembic ./alembic
-COPY backend/celery_worker ./celery_worker
-COPY backend/alembic.ini .
+COPY app ./app
+COPY alembic ./alembic
+COPY celery_worker ./celery_worker
+COPY alembic.ini .
 
 # Create non-root user
 RUN adduser --disabled-password --gecos '' appuser && \

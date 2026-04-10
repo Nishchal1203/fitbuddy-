@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { Dumbbell, Heart, Moon, Target, Utensils, Zap } from "lucide-react";
-import AiIcon from "@/assets/AI_icon.svg";
+import AiIcon from "@/assets/ai_bot.svg";
 import type { QuickTopic } from "./types";
 
 /* ─────────────────────────────────────────────

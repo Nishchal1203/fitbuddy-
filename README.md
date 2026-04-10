@@ -53,7 +53,7 @@ FitBuddy follows a service-oriented architecture pattern with the following comp
 **Frontend:**
 - **React 18**: Modern JavaScript framework
 - **Tailwind CSS**: Utility-first CSS framework
-- **Vite**: Fast build tool and development server
+- **Next.js 15**: Full-stack React framework
 
 **Infrastructure:**
 - **Docker**: Containerization for all services
@@ -76,21 +76,15 @@ FitBuddy follows a service-oriented architecture pattern with the following comp
    cd fitbuddy
    ```
 
-2. **Start backend infrastructure and services:**
+2. **Start all services (frontend + backend + infra):**
    ```bash
    docker-compose up --build
    ```
 
 3. **Access the application:**
+   - Frontend App: http://localhost:3000
    - Backend API: http://localhost:8000
    - API Documentation: http://localhost:8000/docs
-
-4. **Run frontend locally (outside Docker):**
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
 
 ### 🛠️ Local Development
 
