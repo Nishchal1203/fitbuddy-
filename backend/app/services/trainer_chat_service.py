@@ -224,7 +224,7 @@ class TrainerChatService:
         """
         # Always get user's basic profile info
         user = db.get(User, user_id) if user_id else None
-        name = user.name if user and user.name else ""
+        name = getattr(user, "full_name", None) or ""
         age = getattr(user, "age", None) or ""
         weight_kg = getattr(user, "weight_kg", None) or ""
         height_cm = getattr(user, "height_cm", None) or ""

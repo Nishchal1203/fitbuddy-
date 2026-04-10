@@ -1,36 +1,38 @@
-# Multi-stage build for React frontend
-FROM node:18-alpine AS builder
+# Multi-stage build for Next.js frontend
+FROM node:20-alpine AS deps
 
-# Set working directory
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
-
-# Install dependencies (including dev dependencies for build)
 RUN npm ci
 
-# Copy source code
-COPY . .
+FROM node:20-alpine AS builder
 
-# Build the application
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Keep build memory predictable inside constrained Docker environments.
+ENV NODE_OPTIONS=--max-old-space-size=2048
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine
+FROM node:20-alpine AS runner
 
-# Copy built assets from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+RUN addgroup -S nextjs && adduser -S nextjs -G nextjs
 
-# Expose port
-EXPOSE 80
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/ || exit 1
+USER nextjs
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+CMD ["node", "server.js"]

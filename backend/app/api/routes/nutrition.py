@@ -15,6 +15,7 @@ from app.models.nutrition import (
     MealLog,
     NutritionGoal,
 )
+from app.models.progress import BodyMeasurement
 from app.models.user import User
 from app.schemas.nutrition import (
     AIDietPlanGenerateRequest,
@@ -38,6 +39,50 @@ from app.schemas.nutrition import (
 from app.services.ai.nutrition_ai_service import nutrition_ai_service
 
 router = APIRouter(prefix="/nutrition", tags=["nutrition"])
+
+
+def _latest_weight_kg(db: Session, user_id: int) -> float:
+    value = db.execute(
+        select(BodyMeasurement.weight)
+        .where(BodyMeasurement.owner_id == user_id, BodyMeasurement.weight.isnot(None))
+        .order_by(BodyMeasurement.date.desc(), BodyMeasurement.id.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    return float(value) if value is not None else 70.0
+
+
+def _default_goal_values_from_weight(weight_kg: float) -> dict[str, int | float | str | list[str] | None]:
+    protein_g = max(20.0, min(500.0, round(weight_kg * 1.8, 1)))
+    fat_g = max(10.0, min(300.0, round(weight_kg * 0.8, 1)))
+    daily_calories = max(800, min(5000, int(round(weight_kg * 33))))
+    carbs_calories = max(80.0, daily_calories - (protein_g * 4 + fat_g * 9))
+    carbs_g = max(20.0, min(800.0, round(carbs_calories / 4, 1)))
+    hydration_ml = max(500, min(10000, int(round(weight_kg * 35))))
+
+    return {
+        "daily_calories": daily_calories,
+        "protein_g": protein_g,
+        "carbs_g": carbs_g,
+        "fat_g": fat_g,
+        "hydration_ml": hydration_ml,
+        "diet_type": "weight-based",
+        "restrictions": [],
+    }
+
+
+def _get_or_create_goal(db: Session, current_user: User) -> NutritionGoal:
+    goal = db.execute(
+        select(NutritionGoal).where(NutritionGoal.owner_id == current_user.id)
+    ).scalar_one_or_none()
+    if goal:
+        return goal
+
+    weight_kg = _latest_weight_kg(db=db, user_id=current_user.id)
+    goal = NutritionGoal(owner_id=current_user.id, **_default_goal_values_from_weight(weight_kg))
+    db.add(goal)
+    db.commit()
+    db.refresh(goal)
+    return goal
 
 
 @router.get("/foods", response_model=FoodItemListResponse)
@@ -171,12 +216,7 @@ def get_nutrition_goal(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    goal = db.execute(
-        select(NutritionGoal).where(NutritionGoal.owner_id == current_user.id)
-    ).scalar_one_or_none()
-    if not goal:
-        raise HTTPException(status_code=404, detail="Nutrition goal not found")
-    return goal
+    return _get_or_create_goal(db=db, current_user=current_user)
 
 
 @router.post("/goals", response_model=NutritionGoalRead)
@@ -292,14 +332,12 @@ def get_daily_summary(
         "meals_count": len(rows),
     }
 
-    goal = db.execute(
-        select(NutritionGoal).where(NutritionGoal.owner_id == current_user.id)
-    ).scalar_one_or_none()
+    goal = _get_or_create_goal(db=db, current_user=current_user)
     targets = {
-        "calories": goal.daily_calories if goal else 2500,
-        "protein_g": goal.protein_g if goal else 180,
-        "carbs_g": goal.carbs_g if goal else 280,
-        "fat_g": goal.fat_g if goal else 70,
+        "calories": goal.daily_calories,
+        "protein_g": goal.protein_g,
+        "carbs_g": goal.carbs_g,
+        "fat_g": goal.fat_g,
     }
     remaining = {
         "calories": round(targets["calories"] - consumed["calories"], 1),

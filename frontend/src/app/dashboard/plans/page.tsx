@@ -51,6 +51,10 @@ type HydrationSummaryResponse = {
   adherence_percentage: number;
 };
 
+type BodyMeasurementHistoryItem = {
+  weight: number | null;
+};
+
 type MealApiItem = {
   id: number;
   date: string;
@@ -432,19 +436,34 @@ export default function DietPlanPage() {
       if (!token) return;
 
       try {
-        const response = await fetch(`${API_BASE_URL}/api/nutrition/goals`, {
-          headers: buildAuthHeaders(),
-        });
-        if (!response.ok) return;
+        const [goalResponse, measurementResponse] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/nutrition/goals`, {
+            headers: buildAuthHeaders(),
+          }),
+          fetch(`${API_BASE_URL}/api/progress/measurements/history?limit=1`, {
+            headers: buildAuthHeaders(),
+          }),
+        ]);
 
-        const data = (await response.json()) as NutritionGoalResponse;
-        setGoalCalories(data.daily_calories);
-        setGoalMacros({
-          protein: Number(data.protein_g),
-          carbs: Number(data.carbs_g),
-          fat: Number(data.fat_g),
-        });
-        setGoalHydrationMl(data.hydration_ml);
+        if (goalResponse.ok) {
+          const data = (await goalResponse.json()) as NutritionGoalResponse;
+          setGoalCalories(data.daily_calories);
+          setGoalMacros({
+            protein: Number(data.protein_g),
+            carbs: Number(data.carbs_g),
+            fat: Number(data.fat_g),
+          });
+          setGoalHydrationMl(data.hydration_ml);
+        }
+
+        if (measurementResponse.ok) {
+          const measurements =
+            (await measurementResponse.json()) as BodyMeasurementHistoryItem[];
+          const latestWeight = measurements[0]?.weight;
+          if (typeof latestWeight === "number" && Number.isFinite(latestWeight)) {
+            setWeightKg(Math.max(30, Math.min(220, latestWeight)));
+          }
+        }
       } catch {
         // Keep defaults if backend goals are unavailable.
       }

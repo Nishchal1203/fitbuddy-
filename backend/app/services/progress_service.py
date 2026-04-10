@@ -337,8 +337,8 @@ class ProgressService:
         # Count completed goals (filtered to dates when they were completed)
         total_goals = len(goals)
         for goal in goals:
-            if goal.is_completed and goal.completed_at:
-                goal_date = goal.completed_at.date()
+            if goal.is_completed and goal.target_date:
+                goal_date = goal.target_date
                 if goal_date >= start_date:
                     if goal_date not in date_map:
                         date_map[goal_date] = {}
