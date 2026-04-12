@@ -7,8 +7,6 @@ services:
     dockerfilePath: ./Dockerfile.backend
     autoDeploy: true
     healthCheckPath: /api/health
-    startCommand: >
-      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -55,7 +53,6 @@ services:
     rootDir: backend
     dockerfilePath: ./celery_worker/Dockerfile
     autoDeploy: true
-    startCommand: celery -A celery_worker.celery_app worker --loglevel=info --concurrency=2
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -84,7 +81,6 @@ services:
     rootDir: backend
     dockerfilePath: ./celery_worker/Dockerfile.beat
     autoDeploy: true
-    startCommand: celery -A celery_worker.celery_app beat --loglevel=info
     envVars:
       - key: DATABASE_URL
         fromDatabase:

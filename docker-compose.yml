@@ -57,7 +57,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile.backend
+      dockerfile: Dockerfile
     container_name: fitbuddy_backend
     env_file:
       - ./backend/.env
