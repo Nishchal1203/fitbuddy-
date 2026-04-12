@@ -22,10 +22,12 @@ import app.db.base  # noqa: F401  # ensure models are imported
 settings = get_settings()
 app = FastAPI(title=settings.app_name)
 
+frontend_origin = settings.frontend_base_url.rstrip("/")
 origins = [
-    "http://localhost:3000",  # Your current React port
+    frontend_origin,
+    "http://localhost:3000",
     "http://localhost",
-    "http://127.0.0.1:3000",  # Alternative localhost format  
+    "http://127.0.0.1:3000",
 ]
 
 app.add_middleware(

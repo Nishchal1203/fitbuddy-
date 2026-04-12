@@ -4,7 +4,7 @@ services:
     runtime: docker
     plan: free
     rootDir: backend
-    dockerfilePath: ./Dockerfile.backend
+    dockerfilePath: ./Dockerfile
     autoDeploy: true
     healthCheckPath: /api/health
     envVars:
@@ -26,7 +26,7 @@ services:
       - key: AUTH_COOKIE_SECURE
         value: "true"
       - key: FRONTEND_BASE_URL
-        sync: false
+        value: https://fitbuddy-plum.vercel.app
       - key: RABBITMQ_URL
         sync: false
       - key: RABBITMQ_HOST
@@ -100,17 +100,6 @@ services:
       - key: RABBITMQ_USER
         sync: false
       - key: RABBITMQ_PASSWORD
-        sync: false
-
-  - type: web
-    name: fitbuddy-frontend
-    runtime: docker
-    plan: free
-    rootDir: frontend
-    dockerfilePath: ./Dockerfile
-    autoDeploy: true
-    envVars:
-      - key: NEXT_PUBLIC_API_URL
         sync: false
 
   - type: redis
