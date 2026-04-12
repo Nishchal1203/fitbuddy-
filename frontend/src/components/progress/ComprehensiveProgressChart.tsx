@@ -36,6 +36,7 @@ type MetricType =
 
 type TimeframeType = "1_month" | "3_months" | "6_months" | "1_year";
 
+
 interface ComprehensivePoint {
   date: string;
   weight?: number;

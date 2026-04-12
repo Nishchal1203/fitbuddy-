@@ -5,7 +5,7 @@ import { Pin, Trash2, Search, X, Dumbbell } from "lucide-react";
 import Image from "next/image";
 import type { Conversation } from "./types";
 import { Button } from "../ui";
-import Collapser from "@/assets/Collapser.svg";
+import Collapser from "@/assets/collapser.svg";
 import Plusicon from "@/assets/plus.svg";
 import arrow from "@/assets/leftarrow.svg";
 import { useRouter } from "next/navigation";
