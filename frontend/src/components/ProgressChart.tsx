@@ -12,6 +12,7 @@ import {
   Tooltip,
   Legend,
   Filler,
+  type ChartOptions,
 } from "chart.js";
 import { TrendingUp, Calendar, Filter } from "lucide-react";
 
@@ -33,10 +34,30 @@ type ProgressChartProps = {
   refreshTrigger?: number;
 };
 
+type ProgressItem = {
+  date: string;
+  metric_name: string;
+  metric_value: number;
+  unit?: string;
+};
+
+function isProgressItem(value: unknown): value is ProgressItem {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const item = value as Record<string, unknown>;
+  return (
+    typeof item.date === "string" &&
+    typeof item.metric_name === "string" &&
+    typeof item.metric_value === "number"
+  );
+}
+
 export default function ProgressChart({
   refreshTrigger = 0,
 }: ProgressChartProps) {
-  const [progressData, setProgressData] = useState([]);
+  const [progressData, setProgressData] = useState<ProgressItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedMetric, setSelectedMetric] = useState("");
@@ -72,8 +93,11 @@ export default function ProgressChart({
         throw new Error(errorData.detail || "Failed to fetch progress data");
       }
 
-      const data = await response.json();
-      setProgressData(Array.isArray(data) ? data : []);
+      const payload: unknown = await response.json();
+      const data: ProgressItem[] = Array.isArray(payload)
+        ? payload.filter(isProgressItem)
+        : [];
+      setProgressData(data);
 
       // Set default metric if none selected
       if (!selectedMetric && data.length > 0) {
@@ -83,7 +107,7 @@ export default function ProgressChart({
         }
       }
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "Failed to fetch progress data");
     } finally {
       setLoading(false);
     }
@@ -101,7 +125,7 @@ export default function ProgressChart({
         (!selectedMetric || item.metric_name === selectedMetric)
       );
     })
-    .sort((a, b) => new Date(a.date) - new Date(b.date));
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   // Get unique metrics for filter
   const availableMetrics = [
@@ -135,7 +159,7 @@ export default function ProgressChart({
     ],
   };
 
-  const chartOptions = {
+  const chartOptions: ChartOptions<"line"> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -183,7 +207,6 @@ export default function ProgressChart({
       y: {
         grid: {
           color: "#f3f4f6",
-          drawBorder: false,
         },
         ticks: {
           color: "#6b7280",
