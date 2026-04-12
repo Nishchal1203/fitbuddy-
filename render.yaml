@@ -4,7 +4,7 @@ services:
     runtime: docker
     plan: free
     rootDir: backend
-    dockerfilePath: ./Dockerfile.backend
+    dockerfilePath: ./Dockerfile
     autoDeploy: true
     healthCheckPath: /api/health
     envVars:
