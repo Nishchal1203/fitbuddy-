@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import { ToastProvider } from "@/components/ui";
 import EnterpriseTopNav from "@/components/Navbar";
 import {
@@ -23,7 +24,16 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,22 +128,31 @@ export default function DashboardLayout({
   return (
     <ToastProvider>
       <div className="flex h-screen flex-col overflow-hidden bg-gray-50 text-gray-900">
-        <EnterpriseTopNav />
-        <div
-          className={`grid min-h-0 flex-1 overflow-hidden transition-[grid-template-columns] duration-300 ${
-            isCollapsed ? "grid-cols-[5.25rem_1fr]" : "grid-cols-[16rem_1fr]"
-          }`}
-        >
-          <Sidebar
-            activePath={pathname}
-            onLogout={handleLogout}
-            isCollapsed={isCollapsed}
-            onToggleCollapse={() => setIsCollapsed((prev) => !prev)}
-          />
-          <main className="min-h-0 overflow-y-auto overflow-x-hidden">
-            <div className="p-6">{children}</div>
+        <EnterpriseTopNav onLogout={handleLogout} />
+
+        {isMobile ? (
+          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-20">
+            <div className="p-4 sm:p-6">{children}</div>
           </main>
-        </div>
+        ) : (
+          <div
+            className={`grid min-h-0 flex-1 overflow-hidden transition-[grid-template-columns] duration-300 ${
+              isCollapsed ? "grid-cols-[5.25rem_1fr]" : "grid-cols-[16rem_1fr]"
+            }`}
+          >
+            <Sidebar
+              activePath={pathname}
+              onLogout={handleLogout}
+              isCollapsed={isCollapsed}
+              onToggleCollapse={() => setIsCollapsed((prev) => !prev)}
+            />
+            <main className="min-h-0 overflow-y-auto overflow-x-hidden">
+              <div className="p-6">{children}</div>
+            </main>
+          </div>
+        )}
+
+        {isMobile && <MobileBottomNav />}
       </div>
     </ToastProvider>
   );

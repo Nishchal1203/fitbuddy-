@@ -3,13 +3,17 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, UserCircle2 } from "lucide-react";
+import { ChevronDown, Sparkles, UserCircle2 } from "lucide-react";
 import { Button } from "@/components/ui";
 import LogoFull from "@/assets/Logo_full.svg";
 import Image from "next/image";
 import { API_BASE_URL, buildAuthHeaders, getAuthToken } from "@/Utils/api";
 
-export default function EnterpriseTopNav() {
+type EnterpriseTopNavProps = {
+  onLogout?: () => Promise<void> | void;
+};
+
+export default function EnterpriseTopNav({ onLogout }: EnterpriseTopNavProps) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
@@ -88,24 +92,31 @@ export default function EnterpriseTopNav() {
     };
   }, [clearAvatarObjectUrl, loadAvatar]);
 
-  const aiTrainerActive = pathname?.startsWith("/without_sidebar/AI_trainer");
+  const aiTrainerActive = pathname?.startsWith("/without_sidebar/chat");
 
   return (
     <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur">
-      <div className="flex h-16 items-center justify-between px-6">
+      <div className="flex h-16 items-center justify-between px-3 sm:px-6">
         <div className="flex items-center gap-3">
-          <Image src={LogoFull} alt="FitBuddy" width={150} height={150} />
+          <Image
+            src={LogoFull}
+            alt="FitBuddy"
+            width={150}
+            height={150}
+            className="h-auto w-28 sm:w-[150px]"
+          />
           {/* <p className="text-sm font-semibold text-gray-800">FitBuddy</p> */}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link href="/without_sidebar/chat">
             <Button
               variant={aiTrainerActive ? "primary" : "outline"}
               size="sm"
-              className="rounded-xl, border-brand-pale text-brand-slate bg-brand-pale hover:bg-brand-pale"
+              className="border-brand-pale bg-brand-pale text-brand-slate hover:bg-brand-pale"
             >
-              AI Trainer
+              <Sparkles size={14} className="sm:hidden" />
+              <span className="hidden sm:inline">AI Trainer</span>
             </Button>
           </Link>
 
@@ -142,6 +153,17 @@ export default function EnterpriseTopNav() {
                 >
                   Edit profile
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    void onLogout?.();
+                  }}
+                  className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+                  role="menuitem"
+                >
+                  Logout
+                </button>
               </div>
             )}
           </div>

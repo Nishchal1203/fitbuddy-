@@ -14,5 +14,18 @@
 
   body {
     @apply bg-brand-bg text-brand-slate;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    min-height: 100dvh;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
   }
 }

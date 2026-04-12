@@ -256,11 +256,11 @@ export default function DashboardHome() {
      RENDER
   ───────────────────────────────────────────── */
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* ══════════════════════════════════════════
           HERO — Welcome + Quote
       ══════════════════════════════════════════ */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-deep via-brand-purple to-brand-soft p-7 shadow-[0_8px_32px_-8px_#9567B960]">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-deep via-brand-purple to-brand-soft p-4 shadow-[0_8px_32px_-8px_#9567B960] sm:p-7">
         {/* decorative blobs */}
         <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/5" />
         <div className="pointer-events-none absolute -bottom-10 right-24 h-32 w-32 rounded-full bg-white/5" />
@@ -272,12 +272,12 @@ export default function DashboardHome() {
             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/55">
               {MONTHS[now.getMonth()]} {now.getDate()}, {now.getFullYear()}
             </p>
-            <h1 className="text-3xl font-bold text-white">
+            <h1 className="text-2xl font-bold text-white sm:text-3xl">
               Welcome back, {firstName} 💪
             </h1>
 
             {/* quote */}
-            <p className="mt-3 max-w-lg text-sm font-medium italic leading-relaxed text-white/75">
+            <p className="mt-2 max-w-lg text-xs font-medium italic leading-relaxed text-white/75 sm:mt-3 sm:text-sm">
               "{quote}"
             </p>
           </div>
@@ -288,14 +288,14 @@ export default function DashboardHome() {
               setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)])
             }
             title="New quote"
-            className="mt-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/15 text-white transition hover:bg-white/25"
+            className="mt-1 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/15 text-white transition hover:bg-white/25"
           >
             <RefreshCw size={16} />
           </button>
         </div>
 
         {/* quick action pills */}
-        <div className="relative mt-6 flex flex-wrap gap-2">
+        <div className="relative mt-4 flex flex-wrap gap-2 sm:mt-6">
           {[
             {
               label: "Log Workout",
@@ -308,7 +308,7 @@ export default function DashboardHome() {
             <a
               key={a.label}
               href={a.href}
-              className="flex items-center gap-1.5 rounded-xl bg-white/15 px-4 py-2 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-white/25"
+              className="flex min-h-11 items-center gap-1.5 rounded-xl bg-white/15 px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-white/25 sm:px-4"
             >
               <a.icon size={13} />
               {a.label}
