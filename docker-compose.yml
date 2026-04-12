@@ -100,21 +100,6 @@ services:
       timeout: 10s
       retries: 3
 
-  # Next.js Frontend
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: fitbuddy_frontend
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
-    ports:
-      - "3000:3000"
-    depends_on:
-      backend:
-        condition: service_healthy
-    restart: unless-stopped
-
   # Celery Worker
   celery-worker:
     build:

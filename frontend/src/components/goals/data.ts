@@ -23,6 +23,9 @@ export const ACTIVE_GOALS: ActiveGoal[] = [
     targetValue: 42.2,
     unit: "km",
     dueLabel: "Dec 31, 2024",
+    description: "Build endurance and complete a full marathon by year end.",
+    targetDate: "2024-12-31",
+    steps: ["Increase weekly long run", "Add speed sessions", "Track recovery"],
   },
   {
     id: 2,
@@ -33,6 +36,9 @@ export const ACTIVE_GOALS: ActiveGoal[] = [
     targetValue: 80,
     unit: "kg",
     dueLabel: "Nov 15, 2024",
+    description: "Progressively gain lean muscle with strength training.",
+    targetDate: "2024-11-15",
+    steps: ["Follow a 4-day split", "Eat a calorie surplus", "Track weekly weight"],
   },
   {
     id: 3,
@@ -43,6 +49,9 @@ export const ACTIVE_GOALS: ActiveGoal[] = [
     targetValue: 8,
     unit: "hrs avg",
     dueLabel: "Oct 31, 2024",
+    description: "Improve sleep consistency and average nightly duration.",
+    targetDate: "2024-10-31",
+    steps: ["Set fixed bedtime", "Limit caffeine after noon", "Reduce screen time"],
   },
   {
     id: 4,
@@ -53,6 +62,9 @@ export const ACTIVE_GOALS: ActiveGoal[] = [
     targetValue: 180,
     unit: "g",
     dueLabel: "Ongoing",
+    description: "Hit a daily protein target to support training goals.",
+    targetDate: null,
+    steps: ["Plan high-protein meals", "Add post-workout shake", "Log meals daily"],
   },
 ];
 
